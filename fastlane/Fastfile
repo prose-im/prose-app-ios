@@ -1,0 +1,60 @@
+default_platform(:ios)
+skip_docs
+  
+XC_PROJECT = "Prose.xcodeproj"
+RELEASE_NOTES_PATH = File.join(Dir.pwd, "..", "ReleaseNotes")
+
+platform :ios do
+  before_all do
+    xcodes
+  end
+  
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    ensure_git_status_clean
+    
+    version = get_version_number()
+    release_notes_file = File.join(RELEASE_NOTES_PATH, "#{version}.txt")
+    
+    if !File.file?(release_notes_file)
+      UI.user_error!("Missing release notes. Create #{release_notes_file} first.")
+    end
+    
+    release_notes = File.read(release_notes_file)
+    if release_notes.to_s.strip.empty?
+      UI.user_error!("Release notes are empty")
+    end
+    
+    UI.message "Publishing version: #{version}"
+    UI.message "Release notes:\n#{release_notes}"
+    
+    build_number = increment_build_number(skip_info_plist: true)
+    git_commit(path: XC_PROJECT, message: "chore: Bump build number to #{build_number}")
+    
+    build_app(
+      export_method: "app-store",
+      silent: true,
+      clean: true, 
+      xcargs: "-allowProvisioningUpdates"
+    )
+    
+    add_git_tag(
+      grouping: "build",
+      includes_lane: false,
+      build_number: build_number
+    )
+    # push_git_tags
+    # push_to_git_remote
+    
+    upload_to_testflight(
+      changelog: release_notes
+    )
+  end
+  
+  lane :bump_version do |options|
+    ensure_git_status_clean
+    raise "bump_type is missing" unless options[:bump_type]
+    version_number = increment_version_number(bump_type: options[:bump_type])
+    git_commit(path: "**/Info.plist", message: "chore: Bump version to #{version_number}")
+  end
+end

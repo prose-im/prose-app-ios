@@ -1,0 +1,218 @@
+<!DOCTYPE html><meta charset=utf-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>Messaging</title><style>#app{visibility:hidden}</style><link rel=stylesheet href=messaging.a8e65a7b.css><script type=module src=messaging.45ebd437.js></script><body v-scope=App() @vue:mounted=mounted @vue:unmounted=unmounted :style="{
+      '--color-accent-default': ($context.style.accent || defaultAccentColor)
+    }" :class="[
+      'app--theme-' + $context.style.theme,
+      'app--platform-' + $context.style.platform,
+      'app--renderer-' + $context.style.renderer,
+      {
+        'app--modifier-no-scroll': !$context.style.modifiers.scroll,
+        'app--visible': isReady
+      }
+    ]" id=app>
+    
+
+    <div v-if=$store.feed.loaders.backwards v-scope=Loader() class="loader loader--backwards"></div>
+
+    <div v-for="(group, groupIndex) in $store.feed.groups" v-scope=Group() :key="'group/' + (group[0]?.id || groupIndex)" class=group>
+      <div v-for="(entry, entryIndex) in group" v-scope=Entry(entry) v-once :key="dayChangeCount + '/' + $context._store.version + '/' + entry.id + '@' + (entry.updatedAt || 0)" :class="[
+          'entry',
+          {
+            'entry--sticky': isSticky
+          }
+        ]">
+        <div v-if=message v-scope=Message(message) @vue:mounted=mounted class=message>
+          <div v-for="(line, lineIndex) in content" v-scope="MessageLine(line, observer)" @vue:mounted=mounted :key="'line/' + line.id" :data-line-id=line.id :id="'message-' + line.id" :class="[
+              'message-line',
+              {
+                'message-line--last-read': (line.properties &amp;&amp; line.properties.lastRead &amp;&amp; ((groupIndex + 1) < $store.feed.groups.length || (entryIndex + 1) < group.length || (lineIndex + 1) < content.length)),
+                'message-line--highlighted': (line.properties &amp;&amp; line.properties.highlighted)
+              }
+            ]" ref=line>
+            <span v-if=user v-scope=Avatar(user) @vue:mounted=mounted class="avatar message-avatar">
+              <span v-if="lineIndex > 0" class="avatar-image avatar-image--ghost"></span>
+
+              <span v-else-if=avatarUrl @vue:unmounted=onIdentityUnmounted(line.id) @mouseenter="onIdentityMouseEnterOrLeave(line.id, true, $event)" @mouseleave="onIdentityMouseEnterOrLeave(line.id, false)" :style="{
+                  backgroundImage: ('url(\'' + avatarUrl + '\')')
+                }" class=avatar-image></span>
+
+              <span v-else @vue:unmounted=onIdentityUnmounted(line.id) @mouseenter="onIdentityMouseEnterOrLeave(line.id, true, $event)" @mouseleave="onIdentityMouseEnterOrLeave(line.id, false)" :style="{ backgroundColor: defaultPalette }" class="avatar-image avatar-image--placeholder">
+                <span v-if=defaultInitials class=avatar-initials>
+                  {{ defaultInitials }}
+                </span>
+              </span>
+            </span>
+
+            <div class=message-inner>
+              <div v-if="user &amp;&amp; lineIndex === 0" class=message-origin>
+                <span @vue:unmounted=onIdentityUnmounted(line.id) @mouseenter="onIdentityMouseEnterOrLeave(line.id, true, $event)" @mouseleave="onIdentityMouseEnterOrLeave(line.id, false)" class=message-origin-name>
+                  {{ user.name || user.userId }}
+                </span>
+
+                <span v-if=date class=message-origin-date>{{ date }}</span>
+
+                <span v-if="attributes &amp;&amp; attributes.length > 0" class=message-origin-attributes>
+                  <span v-for="attribute in attributes" :title="$context.i18n._.attributes[attribute] || ''" :class="[
+                      'message-origin-attribute',
+                      'message-origin-attribute--' + attribute
+                    ]"></span>
+                </span>
+              </div>
+
+              <div class=message-content>
+                <span v-if="line.type === 'text'" v-scope=MessagePartText(line) @vue:mounted=mounted class=message-text></span>
+
+                <span v-else class=message-other>(?)</span>
+
+                <span v-for="file in line.files" :key="'file/' + file.url" v-scope=MessagePartFile(file) @vue:mounted=mounted class=message-file></span>
+
+                <span v-if=line.reactions class=message-reactions>
+                  <span v-for="reactionData in line.reactions" @vue:unmounted="onReactionUnmounted(line.id, reactionData.reaction)" @click.stop="onReactionClick(line.id, reactionData.reaction, reactionData.authors)" @mouseenter="onReactionMouseEnterOrLeave(line.id, reactionData.reaction, true, $event)" @mouseleave="onReactionMouseEnterOrLeave(line.id, reactionData.reaction, false)" :key="'reaction/' + reactionData.reaction" :class="[
+                      'message-reaction',
+                      {
+                        'message-reaction--active': ($context.account.userId &amp;&amp; reactionData.authors.includes($context.account.userId))
+                      }
+                    ]">
+                    <span class=message-reaction-image>
+                      {{ reactionData.reaction }}
+                    </span>
+
+                    <span class=message-reaction-count>
+                      {{ (reactionData.authors.length || 0) }}
+                    </span>
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div :class="[
+                'message-actions',
+                {
+                  'message-actions--locked': line.locks
+                }
+              ]">
+              <span v-if=!transient @click.stop="onActionReactionsClick($event, line.id)" :title=$context.i18n._.actions.reactions :class="[
+                  'message-action',
+                  'message-action--reactions',
+                  {
+                    'message-action--active': (line.locks &amp;&amp; line.locks.reactions === true)
+                  }
+                ]"></span>
+
+              <span @click.stop="onActionMoreClick($event, line.id)" :title=$context.i18n._.actions.more :class="[
+                  'message-action',
+                  'message-action--more',
+                  {
+                    'message-action--active': (line.locks &amp;&amp; line.locks.actions === true)
+                  }
+                ]"></span>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if=separator v-scope=Separator(separator) class=separator>
+          <span class=separator-label>{{ label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-if=$store.feed.loaders.forwards v-scope=Loader() class="loader loader--forwards"></div>
+
+    
+
+    <template id=template-message-part-text>
+      <span v-if=html v-html=html ref=textInner :class="[
+          'message-text-inner',
+          {
+            'message-text-inner--transient': transient,
+            'message-text-inner--enlarged': enlarged
+          }
+        ]"></span>
+
+      <span v-if=transient class=message-text-flag>
+        ({{ $context.i18n._.attributes.transient }})
+      </span>
+
+      <span v-if=edited class=message-text-flag>
+        ({{ $context.i18n._.attributes.edited }})
+      </span>
+    </template>
+
+    <template id=template-message-part-file>
+      <span v-if=presentation :class="[
+          'message-file-inner',
+          {
+            'message-file-inner--expanded': isExpanded
+          }
+        ]">
+        <span class=message-file-expander @click=onFileExpanderClick>
+          {{ file.name }}
+        </span>
+
+        <span v-scope=File(file) @vue:mounted=mounted class="file message-file-content">
+          <a v-if="presentation === 'image'" v-scope=FileImage(file) @click.prevent.stop="onFileClick(line.id, viewAction)" :href=file.url :class="[
+              {
+                'file-image': previewSize,
+                'file-other-option file-other-option--view': !previewSize
+              }
+            ]">
+            <span v-if=previewSize :style="{
+                backgroundImage: ('url(\'' + imagePreviewUrl + '\')'),
+                width: (previewSize.width ? (previewSize.width + 'px') : null),
+                height: (previewSize.height ? (previewSize.height + 'px') : null)
+              }" class="file-thumbnail file-thumbnail--image"></span>
+          </a>
+
+          <a v-else-if="presentation === 'video'" v-scope=FileVideo(file) @vue:mounted=mounted @click.prevent.stop="onFileClick(line.id, viewAction)" :href=file.url :class="[
+              {
+                'file-video file-player': previewSize,
+                'file-other-option file-other-option--play': !previewSize
+              }
+            ]">
+            <span v-if=previewSize :style="{
+                backgroundImage: (videoPreviewUrl ? ('url(\'' + videoPreviewUrl + '\')') : null),
+                width: (previewSize.width ? (previewSize.width + 'px') : null),
+                height: (previewSize.height ? (previewSize.height + 'px') : null)
+              }" class="file-player-preview file-thumbnail file-thumbnail--video">
+              <span class="file-player-action file-player-action--large file-player-action--play"></span>
+
+              <span v-if="videoPreviewDuration > 0 &amp;&amp; videoDurationTimer" class=file-player-duration>
+                {{ videoDurationTimer }}
+              </span>
+            </span>
+          </a>
+
+          <span v-else-if="presentation === 'audio'" v-scope=FileAudio(file) @vue:mounted=mounted class=file-audio>
+            <span class="file-player file-player-track">
+              <span @click=onAudioActionClick(audioAction) :class="[
+                  'file-player-action',
+                  'file-player-action--small',
+                  'file-player-action--' + audioAction
+                ]"></span>
+
+              <span class=file-player-analyser>
+                <span class=file-player-analyser-progress :style="{
+                    width: (audioProgressPercent + '%')
+                  }"></span>
+              </span>
+
+              <span v-if=audioTimer class=file-player-timer>
+                {{ audioTimer }}
+              </span>
+
+              <audio @play=onAudioMediaPlay @canplay=onAudioMediaCanPlay @pause=onAudioMediaPause @stalled=onAudioMediaStalled @timeupdate=onAudioMediaTimeUpdate class=file-player-media preload=none ref=media>
+                
+                <source @error=onAudioMediaSourceError src=about:blank :src=file.url :type=file.type>
+              </audio>
+            </span>
+          </span>
+
+          <ul v-else class=file-other>
+            <li>
+              <a @click.prevent.stop="onFileClick(line.id, viewAction)" :href=file.url :download="file.name || file.url" class="file-other-option file-other-option--get"></a>
+            </li>
+          </ul>
+        </span>
+      </span>
+    </template>
+  
+

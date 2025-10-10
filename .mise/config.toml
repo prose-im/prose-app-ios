@@ -1,0 +1,14 @@
+[tools]
+swiftformat = "0.58.5"
+
+[hooks]
+postinstall = "bundle install"
+
+[tasks.format]
+description = "Run swiftformat"
+alias = "f"
+run = ["swiftformat ."]
+
+[tasks."beta"]
+description = "Build a public beta version & upload it to TestFlight"
+run = "bundle exec fastlane beta"

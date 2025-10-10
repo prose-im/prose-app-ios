@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Bump the project version"
+#USAGE arg "<type>" help="Which part of the version number to bump" {
+#USAGE   choices "patch" "minor"
+#USAGE }
+
+set -euo pipefail
+
+bundle exec fastlane bump_version bump_type:$usage_type
