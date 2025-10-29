@@ -43,8 +43,8 @@ platform :ios do
       includes_lane: false,
       build_number: build_number
     )
-    # push_git_tags
-    # push_to_git_remote
+    push_git_tags
+    push_to_git_remote
     
     upload_to_testflight(
       changelog: release_notes
