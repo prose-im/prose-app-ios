@@ -16,6 +16,18 @@ public struct SidebarItem: Equatable {
   public var avatar: URL?
 }
 
+public extension SidebarItem {
+  /// Available if the underlying room is a Direct Message
+  var availability: Availability? {
+    switch self.room {
+    case let .directMessage(room):
+      room.participants().first?.availability
+    default:
+      nil
+    }
+  }
+}
+
 extension SidebarItem: Identifiable {
   public var id: RoomId {
     self.room.id

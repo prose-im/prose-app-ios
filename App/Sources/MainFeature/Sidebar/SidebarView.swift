@@ -3,7 +3,9 @@
 // Copyright (c) 2025 Prose Foundation
 //
 
+import Domain
 import RoomFeature
+import SharedUI
 import SwiftUI
 
 struct SidebarView: View {
@@ -28,24 +30,7 @@ struct SidebarView: View {
                     selectedItem: item,
                   ))
                 } label: {
-                  HStack {
-                    AsyncImage(url: self.model.avatars[item.id]) { image in
-                      image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                      Color.gray.opacity(0.2)
-                        .overlay(
-                          Image(systemName: "bubble.fill")
-                            .font(.caption)
-                            .foregroundColor(.gray.opacity(0.7)),
-                        )
-                    }
-                    .frame(width: 24, height: 24)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-
-                    Text(verbatim: item.name)
-                  }
+                  Row(item: item, avatar: self.model.avatars[item.id])
                 }
               }
             } header: {
@@ -56,5 +41,39 @@ struct SidebarView: View {
       }
     }
     .task { await self.model.task() }
+  }
+}
+
+private struct Row: View {
+  let item: SidebarItem
+  let avatar: URL?
+
+  var body: some View {
+    HStack {
+      self.icon
+      Text(verbatim: self.item.name)
+
+      if let availability = self.item.availability {
+        AvailabilityIndicator(availability)
+          .size(8)
+      }
+    }
+  }
+
+  var icon: some View {
+    AsyncImage(url: self.avatar) { image in
+      image
+        .resizable()
+        .aspectRatio(contentMode: .fill)
+    } placeholder: {
+      Color.gray.opacity(0.2)
+        .overlay(
+          Image(systemName: "bubble.fill")
+            .font(.caption)
+            .foregroundColor(.gray.opacity(0.7)),
+        )
+    }
+    .frame(width: 24, height: 24)
+    .clipShape(RoundedRectangle(cornerRadius: 6))
   }
 }

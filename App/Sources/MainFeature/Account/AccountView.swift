@@ -4,6 +4,7 @@
 //
 
 import Domain
+import SharedUI
 import SwiftUI
 
 struct AccountView: View {
@@ -28,13 +29,11 @@ struct AccountView: View {
           .frame(width: 56, height: 56)
           .clipShape(RoundedRectangle(cornerRadius: 12))
 
-          Circle()
-            .fill(Color.green)
-            .frame(width: 12, height: 12)
-            .overlay(
-              Circle().stroke(Color.white, lineWidth: 2),
-            )
-            .offset(x: 2, y: 2)
+          AvailabilityIndicator(self.model.account.availability)
+            .isOwnStatus(true)
+            .size(12)
+            .border(width: 3, color: .white)
+            .offset(x: 3, y: 3)
         }
 
         VStack(alignment: .leading, spacing: 2) {

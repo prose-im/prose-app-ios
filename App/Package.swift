@@ -96,7 +96,12 @@ let package = Package(
       ],
     ),
     .target(name: "Toolbox"),
-    .target(name: "SharedUI"),
+    .target(
+      name: "SharedUI",
+      dependencies: [
+        "Domain",
+      ],
+    ),
 
     .testTarget(
       name: "DepsTests",
