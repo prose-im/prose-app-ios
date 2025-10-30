@@ -33,12 +33,12 @@ final class SidebarModel {
   }
 
   func task() async {
-    await self.setSidebarItems(items: self.client.sidebarItems())
+    await self.sidebarItemsDidChange(items: self.client.sidebarItems())
 
     for await event in self.client.events() {
       switch event {
       case .sidebarChanged:
-        await self.setSidebarItems(items: self.client.sidebarItems())
+        await self.sidebarItemsDidChange(items: self.client.sidebarItems())
       default:
         continue
       }
@@ -53,61 +53,21 @@ final class SidebarModel {
 }
 
 private extension SidebarModel {
-  func setSidebarItems(items: [SidebarItem]) {
-    var favorites = [SidebarItem]()
-    var dms = [SidebarItem]()
-    var channels = [SidebarItem]()
-
+  func sidebarItemsDidChange(items: [SidebarItem]) {
+    // Load avatars if needed…
     for item in items {
-      switch item.room {
-      case _ where item.isFavorite:
-        favorites.append(item)
+      guard case let .directMessage(room) = item.room else {
+        continue
+      }
 
-      case let .directMessage(room):
-        if let avatar = room.participants().first?.avatar, avatarTasks[item.id] == nil {
-          self.avatarTasks[item.id] = Task { [weak self] in
-            let url = try await self?.client.loadAvatar(avatar: avatar)
-            self?.avatars[item.id] = url
-          }
+      if let avatar = room.participants().first?.avatar, avatarTasks[item.id] == nil {
+        self.avatarTasks[item.id] = Task { [weak self] in
+          let url = try await self?.client.loadAvatar(avatar: avatar)
+          self?.avatars[item.id] = url
         }
-        dms.append(item)
-
-      case .group:
-        dms.append(item)
-
-      case .privateChannel, .publicChannel, .generic:
-        channels.append(item)
       }
     }
 
-    favorites.sort()
-    dms.sort()
-    channels.sort()
-
-    var sections = [Section]()
-
-    if !favorites.isEmpty {
-      sections.append(
-        Section(
-          name: String(localized: "Favorites"),
-          items: favorites,
-        ),
-      )
-    }
-
-    sections.append(
-      Section(
-        name: String(localized: "Direct Messages"),
-        items: dms,
-      ),
-    )
-    sections.append(
-      Section(
-        name: String(localized: "Channels"),
-        items: channels,
-      ),
-    )
-
-    self.sections = sections
+    self.sections = Section.sectionsByGrouping(items: items)
   }
 }
