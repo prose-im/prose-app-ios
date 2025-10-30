@@ -25,10 +25,7 @@ struct SidebarView: View {
             Section {
               ForEach(section.items) { item in
                 NavigationLink {
-                  RoomView(model: RoomModel(
-                    sessionState: self.model.$sessionState,
-                    selectedItem: item,
-                  ))
+                  RoomView(model: self.model.roomModel(for: item))
                 } label: {
                   Row(item: item, avatar: self.model.avatars[item.id])
                 }

@@ -3,6 +3,7 @@
 // Copyright (c) 2025 Prose Foundation
 //
 
+import Dependencies
 import DependenciesMacros
 import Domain
 import Foundation
@@ -73,4 +74,15 @@ public struct ProseCoreClient: Sendable {
   public var previewMarkdown: @Sendable (String) async -> String = { $0 }
 
   public var deleteCachedData: @Sendable () async throws -> Void
+}
+
+public extension DependencyValues {
+  var client: ProseCoreClient {
+    get { self[ProseCoreClient.self] }
+    set { self[ProseCoreClient.self] = newValue }
+  }
+}
+
+extension ProseCoreClient: TestDependencyKey {
+  public static let testValue = Self()
 }

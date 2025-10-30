@@ -12,17 +12,14 @@ import Foundation
 public final class RoomModel {
   @ObservationIgnored @SharedReader var sessionState: SessionState
 
-  @ObservationIgnored @Dependency(\.accounts) var accounts
-
   let selectedItem: SidebarItem
-  var messages = IdentifiedArrayOf<Message>()
+  let chatModel: ChatModel
 
-  var chatModel: ChatModel {
-    ChatModel(sessionState: self.$sessionState, selectedItem: self.selectedItem)
-  }
+  var messages = IdentifiedArrayOf<Message>()
 
   public init(sessionState: SharedReader<SessionState>, selectedItem: SidebarItem) {
     self._sessionState = sessionState
     self.selectedItem = selectedItem
+    self.chatModel = ChatModel(sessionState: sessionState, selectedItem: selectedItem)
   }
 }

@@ -12,7 +12,7 @@ import SharedUI
 public final class ChatModel {
   @ObservationIgnored @SharedReader var sessionState: SessionState
 
-  @ObservationIgnored @Dependency(\.accounts) var accounts
+  @ObservationIgnored @Dependency(\.client) var client
   @ObservationIgnored @Dependency(\.logger[category: "Chat"]) var logger
 
   let selectedItem: SidebarItem
@@ -31,11 +31,7 @@ public final class ChatModel {
   func task() async {
     try? await self.loadMessages()
 
-    guard let client = try? self.accounts.client(for: self.sessionState.selectedAccountId) else {
-      return
-    }
-
-    for await event in client.events() {
+    for await event in self.client.events() {
       guard
         case let .roomChanged(room: room, type: roomEvent) = event,
         room.id == self.selectedItem.id

@@ -15,18 +15,16 @@ final class AccountModel {
   @Shared(.app) var appState = AppState()
   @Shared var account: Account
 
-  let client: ProseCoreClient
-
+  @Dependency(\.client) var client
   @Dependency(\.credentials) var credentials
   @Dependency(\.connectivity) var connectivity
   @Dependency(\.scenePhase) var scenePhase
 
   private var cancellables = Set<AnyCancellable>()
 
-  init(userId: UserId, account: Shared<Account>, client: ProseCoreClient) {
+  init(userId: UserId, account: Shared<Account>) {
     self.userId = userId
     self._account = account
-    self.client = client
 
     Task {
       await self.connectClient()

@@ -6,6 +6,7 @@
 import Deps
 import Domain
 import Foundation
+import RoomFeature
 import SwiftUI
 
 @MainActor @Observable
@@ -21,7 +22,7 @@ final class SidebarModel {
 
   @ObservationIgnored @SharedReader var sessionState: SessionState
 
-  @ObservationIgnored @Dependency(\.accounts) var accounts
+  @ObservationIgnored @Dependency(\.client) var client
 
   var sections = [Section]()
   var avatarTasks = [RoomId: Task<Void, Error>]()
@@ -32,25 +33,27 @@ final class SidebarModel {
   }
 
   func task() async {
-    guard let client = try? self.accounts.client(for: self.sessionState.selectedAccountId) else {
-      return
-    }
+    await self.setSidebarItems(items: self.client.sidebarItems())
 
-    await self.setSidebarItems(items: client.sidebarItems(), client: client)
-
-    for await event in client.events() {
+    for await event in self.client.events() {
       switch event {
       case .sidebarChanged:
-        await self.setSidebarItems(items: client.sidebarItems(), client: client)
+        await self.setSidebarItems(items: self.client.sidebarItems())
       default:
         continue
       }
     }
   }
+
+  func roomModel(for item: SidebarItem) -> RoomModel {
+    withDependencies(from: self) {
+      RoomModel(sessionState: self.$sessionState, selectedItem: item)
+    }
+  }
 }
 
 private extension SidebarModel {
-  func setSidebarItems(items: [SidebarItem], client: ProseCoreClient) {
+  func setSidebarItems(items: [SidebarItem]) {
     var favorites = [SidebarItem]()
     var dms = [SidebarItem]()
     var channels = [SidebarItem]()
@@ -63,7 +66,7 @@ private extension SidebarModel {
       case let .directMessage(room):
         if let avatar = room.participants().first?.avatar, avatarTasks[item.id] == nil {
           self.avatarTasks[item.id] = Task { [weak self] in
-            let url = try await client.loadAvatar(avatar: avatar)
+            let url = try await self?.client.loadAvatar(avatar: avatar)
             self?.avatars[item.id] = url
           }
         }

@@ -96,7 +96,9 @@ private extension AppModel {
       // Set the state conditionally so that controls don't lose focus in case the auth form
       // is visible already.
       if self.login == nil {
-        self.login = LoginModel()
+        self.login = withDependencies(from: self) {
+          LoginModel()
+        }
       }
 
       return
@@ -113,14 +115,19 @@ private extension AppModel {
 
       _ = sessionState.withLock { $0.accounts.append(Account.placeholder(for: accountId)) }
 
-      self.accounts[accountId] = AccountModel(
-        userId: accountId,
-        account: Shared(sessionState.projectedValue.accounts[id: accountId])!,
-        client: client,
-      )
+      self.accounts[accountId] = withDependencies(from: self) {
+        $0.client = client
+      } operation: {
+        AccountModel(
+          userId: accountId,
+          account: Shared(sessionState.projectedValue.accounts[id: accountId])!,
+        )
+      }
     }
 
     self.login = nil
-    self.route = .main(MainModel(sessionState: SharedReader(sessionState)))
+    self.route = withDependencies(from: self) {
+      .main(MainModel(sessionState: SharedReader(sessionState)))
+    }
   }
 }

@@ -4,3 +4,4 @@
 //
 
 @_exported import struct Dependencies.Dependency
+@_exported import func Dependencies.withDependencies
