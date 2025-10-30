@@ -26,11 +26,25 @@ public extension SidebarItem {
       nil
     }
   }
+
+  var roomId: RoomId {
+    self.room.id
+  }
 }
 
-extension SidebarItem: Identifiable {
-  public var id: RoomId {
-    self.room.id
+extension SidebarItem: Identifiable, Hashable {
+  public var id: Int {
+    self.hashValue
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(self.name)
+    hasher.combine(self.availability)
+    hasher.combine(self.isFavorite)
+    hasher.combine(self.hasDraft)
+    hasher.combine(self.unreadCount)
+    hasher.combine(self.mentionsCount)
+    hasher.combine(self.avatar)
   }
 }
 

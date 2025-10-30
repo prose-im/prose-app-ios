@@ -22,9 +22,17 @@ extension RoomEnvelope: @retroactive Identifiable {
   }
 }
 
+// UniFFI can generate Equatable conformances but not for structs that contain objects.
+// See https://github.com/mozilla/uniffi-rs/issues/2409
 extension RoomEnvelope: @retroactive Equatable {
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs.id == rhs.id
+    let (lBase, rBase) = (lhs.baseRoom, rhs.baseRoom)
+
+    return
+      lBase.id() == rBase.id() &&
+      lBase.state() == rBase.state() &&
+      lBase.name() == rBase.name() &&
+      lBase.participants() == rBase.participants()
   }
 }
 

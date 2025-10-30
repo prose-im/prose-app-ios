@@ -34,7 +34,7 @@ public final class ChatModel {
     for await event in self.client.events() {
       guard
         case let .roomChanged(room: room, type: roomEvent) = event,
-        room.id == self.selectedItem.id
+        room.id == self.selectedItem.roomId
       else {
         continue
       }

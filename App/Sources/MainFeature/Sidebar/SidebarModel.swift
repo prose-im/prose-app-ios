@@ -11,7 +11,7 @@ import SwiftUI
 
 @MainActor @Observable
 final class SidebarModel {
-  struct Section: Identifiable, Equatable {
+  struct Section: Identifiable {
     var name: String
     var items: [SidebarItem]
 
@@ -60,10 +60,10 @@ private extension SidebarModel {
         continue
       }
 
-      if let avatar = room.participants().first?.avatar, avatarTasks[item.id] == nil {
-        self.avatarTasks[item.id] = Task { [weak self] in
+      if let avatar = room.participants().first?.avatar, avatarTasks[item.roomId] == nil {
+        self.avatarTasks[item.roomId] = Task { [weak self] in
           let url = try await self?.client.loadAvatar(avatar: avatar)
-          self?.avatars[item.id] = url
+          self?.avatars[item.roomId] = url
         }
       }
     }

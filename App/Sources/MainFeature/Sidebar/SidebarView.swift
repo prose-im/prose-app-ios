@@ -27,7 +27,7 @@ struct SidebarView: View {
                 NavigationLink {
                   RoomView(model: self.model.roomModel(for: item))
                 } label: {
-                  Row(item: item, avatar: self.model.avatars[item.id])
+                  Row(item: item, avatar: self.model.avatars[item.roomId])
                 }
               }
             } header: {
