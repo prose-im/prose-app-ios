@@ -11,10 +11,15 @@ import Toolbox
 @MainActor
 final class AccountModel {
   private let userId: UserId
+
+  @Shared(.app) var appState = AppState()
   @Shared var account: Account
 
   let client: ProseCoreClient
+
   @Dependency(\.credentials) var credentials
+  @Dependency(\.connectivity) var connectivity
+  @Dependency(\.scenePhase) var scenePhase
 
   private var cancellables = Set<AnyCancellable>()
 
@@ -24,17 +29,23 @@ final class AccountModel {
     self.client = client
 
     Task {
-      if let credentials = try? self.credentials.loadCredentials(self.userId) {
-        try? await self.client.connect(credentials, true)
-      }
+      await self.connectClient()
 
+      self.observeConnectivityAndScenePhase()
       try await self.client.startObservingRooms()
+
       await self.loadAccountData()
     }.store(in: &self.cancellables)
   }
 }
 
 private extension AccountModel {
+  func connectClient() async {
+    if let credentials = try? self.credentials.loadCredentials(self.userId) {
+      try? await self.client.connect(credentials, true)
+    }
+  }
+
   func loadAccountData() async {
     do {
       async let accountInfoTask = self.client.loadAccountInfo()
@@ -66,6 +77,41 @@ private extension AccountModel {
       }
     } catch {
       print("Failed to load account data.", error)
+    }
+  }
+
+  func observeConnectivityAndScenePhase() {
+    Task { [weak self, connectivity, appState = self.$appState] in
+      for await status in connectivity() {
+        appState.withLock { $0.connectivity = status }
+        self?.appStateDidChange()
+      }
+    }.store(in: &self.cancellables)
+
+    Task { [weak self, scenePhase, appState = self.$appState] in
+      for await phase in scenePhase() {
+        appState.withLock { $0.scenePhase = phase }
+        self?.appStateDidChange()
+      }
+    }.store(in: &self.cancellables)
+  }
+
+  func connectivityDidChange() {
+    guard self.appState.connectivity == .online else {
+      return
+    }
+    Task { await self.connectClient() }
+  }
+
+  func appStateDidChange() {
+    Task {
+      switch self.appState.scenePhase {
+      case .active, .inactive:
+        await self.connectClient()
+
+      case .background:
+        try await self.client.disconnect()
+      }
     }
   }
 }

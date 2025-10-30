@@ -35,6 +35,10 @@ let package = Package(
       url: "https://github.com/pointfreeco/swift-sharing.git",
       .upToNextMajor(from: "2.7.4"),
     ),
+    .package(
+      url: "https://github.com/apple/swift-async-algorithms.git",
+      .upToNextMajor(from: "1.0.4"),
+    ),
   ],
   targets: [
     .feature(
@@ -88,6 +92,7 @@ let package = Package(
         "Toolbox",
         .product(name: "Dependencies", package: "swift-dependencies"),
         .product(name: "DependenciesMacros", package: "swift-dependencies"),
+        .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
       ],
     ),
     .target(name: "Toolbox"),

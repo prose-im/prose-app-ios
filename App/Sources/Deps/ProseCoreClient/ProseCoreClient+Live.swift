@@ -11,6 +11,8 @@ import UIKit
 
 extension ProseCoreClient {
   static func live(userId: UserId) async throws -> Self {
+    @Dependency(\.logger[category: "Client"]) var logger
+
     let connectionStatus = CurrentValueSubject<ConnectionStatus, Never>(.disconnected)
     let events = PassthroughSubject<ClientEvent, Never>()
 
@@ -41,18 +43,18 @@ extension ProseCoreClient {
         connectionStatus.value != .connected,
         connectionStatus.value != .connecting
       else {
-        print("Ignoring connection attempt", credentials.id)
         return
       }
 
       connectionStatus.value = .connecting
 
       do {
+        logger.info("Connecting \(credentials.id)…")
         try await client.connect(userId: credentials.id, password: credentials.password)
         connectionStatus.value = .connected
-        print("Connected", credentials.id)
+        logger.info("Connected \(credentials.id).")
       } catch {
-        print("Connection failed", credentials.id)
+        logger.info("Connection failed for \(credentials.id).")
         if numberOfRetries < 1 {
           connectionStatus.value = .disconnected
           throw error
@@ -88,7 +90,10 @@ extension ProseCoreClient {
         )
       },
       disconnect: {
+        logger.info("Disconnecting…")
+        connectionStatus.value = .disconnected
         try await client.disconnect()
+        logger.info("Disconnected.")
       },
       startObservingRooms: {
         try await client.startObservingRooms()
