@@ -73,14 +73,14 @@ extension ProseCoreClient {
       connectionStatus: {
         connectionStatus
           .removeDuplicates()
-          .buffer(size: 10, prefetch: .byRequest, whenFull: .dropOldest)
+          .buffer(size: 50, prefetch: .byRequest, whenFull: .dropOldest)
           .values
       },
       events: {
         events
           // Buffer events or they might get lost in the AsyncSequence
           // See: https://stackoverflow.com/questions/75776172/passthroughsubjects-asyncpublisher-values-property-not-producing-all-values
-          .buffer(size: 10, prefetch: .byRequest, whenFull: .dropOldest)
+          .buffer(size: 50, prefetch: .byRequest, whenFull: .dropOldest)
           .values
       },
       connect: { credentials, retry in
