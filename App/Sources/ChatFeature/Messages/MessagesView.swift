@@ -66,7 +66,13 @@ struct MessagesView: UIViewRepresentable {
       .expect("Failed to read MessagesView template.")
 
     let webView = WKWebView(frame: .zero, configuration: configuration)
-    webView.isInspectable = true
+    webView.isOpaque = false
+    webView.backgroundColor = UIColor.clear
+
+    #if DEBUG
+      webView.isInspectable = true
+    #endif
+
     webView.loadFileURL(htmlURL, allowingReadAccessTo: htmlURL.deletingLastPathComponent())
 
     context.coordinator.ffi = FFI { [
