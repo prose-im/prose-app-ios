@@ -35,9 +35,11 @@ struct MessagesView: UIViewRepresentable {
   }
 
   func makeUIView(context: Context) -> WKWebView {
+    let logger = context.coordinator.model.logger
     let contentController = WKUserContentController()
 
     contentController.addDOMReadyHandler {
+      logger.info("DOM ready.")
       context.coordinator.model.webViewIsReady = true
     }
 
@@ -75,10 +77,7 @@ struct MessagesView: UIViewRepresentable {
 
     webView.loadFileURL(htmlURL, allowingReadAccessTo: htmlURL.deletingLastPathComponent())
 
-    context.coordinator.ffi = FFI { [
-      weak webView,
-      logger = context.coordinator.model.logger,
-    ] jsString, completion in
+    context.coordinator.ffi = FFI { [weak webView] jsString, completion in
       webView?.evaluateJavaScript(jsString) { res, error in
         // Take the JS method name
         let domain: () -> String = { String(jsString.prefix(while: { $0 != "(" })) }
@@ -122,6 +121,9 @@ struct MessagesView: UIViewRepresentable {
     }
 
     defer { coordinator.lastMessages = coordinator.model.messages }
+
+    let logger = coordinator.model.logger
+    logger.info("Loading messages into WebView…")
 
     coordinator.ffi.messagingStore.updateMessages(
       to: coordinator.model.messages.elements,
