@@ -22,7 +22,7 @@ struct SidebarView: View {
       } else {
         List {
           ForEach(self.model.sections) { section in
-            Section {
+            Section(isExpanded: Binding(section.$isExpanded)) {
               ForEach(section.items) { item in
                 NavigationLink {
                   RoomView(model: self.model.roomModel(for: item))

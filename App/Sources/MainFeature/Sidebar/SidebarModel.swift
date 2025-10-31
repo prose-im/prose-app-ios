@@ -15,12 +15,15 @@ final class SidebarModel {
     var name: String
     var items: [SidebarItem]
 
+    @Shared var isExpanded: Bool
+
     var id: String {
       self.name
     }
   }
 
   @ObservationIgnored @SharedReader var sessionState: SessionState
+  @ObservationIgnored @Shared var settings: AccountSettings.Sidebar
 
   @ObservationIgnored @Dependency(\.client) var client
 
@@ -30,6 +33,8 @@ final class SidebarModel {
 
   init(sessionState: SharedReader<SessionState>) {
     self._sessionState = sessionState
+    self._settings = (Shared<AccountSettings>(
+      .account(userId: sessionState.wrappedValue.selectedAccountId)).sidebar)
   }
 
   func task() async {
@@ -68,6 +73,6 @@ private extension SidebarModel {
       }
     }
 
-    self.sections = Section.sectionsByGrouping(items: items)
+    self.sections = Section.sectionsByGrouping(items: items, settings: self.$settings)
   }
 }
