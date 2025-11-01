@@ -54,6 +54,19 @@ private struct Row: View {
         AvailabilityIndicator(availability)
           .size(8)
       }
+
+      Spacer()
+
+      if self.item.mentionsCount > 0 || self.item.unreadCount > 0 {
+        Text("\(self.item.mentionsCount > 0 ? "@" : String(self.item.unreadCount))")
+          .font(.caption)
+          .fontWeight(.bold)
+          .foregroundColor(.white)
+          .padding(.horizontal, 4)
+          .padding(.vertical, 2)
+          .frame(minWidth: 20, minHeight: 20)
+          .background(Capsule().fill(.blue))
+      }
     }
   }
 
