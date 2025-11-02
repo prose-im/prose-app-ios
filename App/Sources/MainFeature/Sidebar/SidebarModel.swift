@@ -28,7 +28,8 @@ final class SidebarModel {
   @ObservationIgnored @Dependency(\.client) var client
   @ObservationIgnored @Dependency(\.logger[category: "Sidebar"]) var logger
 
-  var sections = [Section]()
+  var isLoading = true
+  var sections: [Section] = Section.placeholderData
   var avatarTasks = [RoomId: Task<Void, Error>]()
   var avatars = [RoomId: URL]()
 
@@ -39,8 +40,6 @@ final class SidebarModel {
   }
 
   func task() async {
-    await self.sidebarItemsDidChange(items: self.client.sidebarItems())
-
     for await event in self.client.events() {
       switch event {
       case .sidebarChanged:
@@ -87,6 +86,8 @@ final class SidebarModel {
 
 private extension SidebarModel {
   func sidebarItemsDidChange(items: [SidebarItem]) {
+    self.isLoading = false
+
     // Load avatars if needed…
     for item in items {
       if

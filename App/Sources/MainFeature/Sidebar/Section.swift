@@ -61,3 +61,31 @@ extension SidebarModel.Section {
     return sections
   }
 }
+
+extension SidebarModel.Section {
+  @MainActor static let placeholderData: [Self] = .init(
+    repeating: .init(
+      name: String(repeating: "X", count: 14),
+      items: (0..<8).map { _ in
+        .init(
+          name: String(repeating: "X", count: Int.random(in: 7...22)),
+          roomId: .muc("id"),
+          type: .directMessage(
+            availability: .unavailable,
+            initials: "",
+            color: .lightGray,
+            avatar: nil,
+            status: nil,
+          ),
+          roomState: .connected,
+          isFavorite: false,
+          hasDraft: false,
+          unreadCount: 0,
+          mentionsCount: 0,
+        )
+      },
+      isExpanded: Shared(value: true),
+    ),
+    count: 3,
+  )
+}

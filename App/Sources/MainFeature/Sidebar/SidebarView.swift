@@ -17,15 +17,14 @@ struct SidebarView: View {
 
   var body: some View {
     VStack {
-      if self.model.sections.isEmpty {
-        Text("Loading…")
-      } else {
-        List {
-          ForEach(self.model.sections) {
-            self.section(with: $0)
-          }
-        }.listStyle(.sidebar)
+      List {
+        ForEach(self.model.sections) {
+          self.section(with: $0)
+        }
       }
+      .listStyle(.sidebar)
+      .skeleton(condition: self.model.isLoading)
+      .ignoresSafeArea()
     }
     .task { await self.model.task() }
   }
@@ -59,6 +58,7 @@ private extension SidebarView {
             .padding(4)
             .background(Circle().fill(Color(.secondarySystemFill)))
         }
+        .hiddenIfRedacted()
       }
     }
   }

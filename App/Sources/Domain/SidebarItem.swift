@@ -21,14 +21,6 @@ public struct SidebarItem: Equatable, Hashable {
     case generic
   }
 
-  public struct User: Equatable, Hashable {
-    public var availability: Availability
-    public var initials: String
-    public var color: HexColor
-    public var avatar: Avatar?
-    public var status: UserStatus?
-  }
-
   public var name: String
   public var roomId: RoomId
   public var type: Kind
@@ -37,6 +29,26 @@ public struct SidebarItem: Equatable, Hashable {
   public var hasDraft: Bool
   public var unreadCount: UInt32
   public var mentionsCount: UInt32
+
+  public init(
+    name: String,
+    roomId: RoomId,
+    type: Kind,
+    roomState: RoomState,
+    isFavorite: Bool,
+    hasDraft: Bool,
+    unreadCount: UInt32,
+    mentionsCount: UInt32,
+  ) {
+    self.name = name
+    self.roomId = roomId
+    self.type = type
+    self.roomState = roomState
+    self.isFavorite = isFavorite
+    self.hasDraft = hasDraft
+    self.unreadCount = unreadCount
+    self.mentionsCount = mentionsCount
+  }
 }
 
 extension SidebarItem: Identifiable {
