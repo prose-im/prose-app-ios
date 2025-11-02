@@ -26,6 +26,7 @@ final class SidebarModel {
   @ObservationIgnored @Shared var settings: AccountSettings.Sidebar
 
   @ObservationIgnored @Dependency(\.client) var client
+  @ObservationIgnored @Dependency(\.logger[category: "Sidebar"]) var logger
 
   var sections = [Section]()
   var avatarTasks = [RoomId: Task<Void, Error>]()
@@ -53,6 +54,24 @@ final class SidebarModel {
   func roomModel(for item: SidebarItem) -> RoomModel {
     withDependencies(from: self) {
       RoomModel(sessionState: self.$sessionState, selectedItem: item)
+
+  func removeItem(_ item: SidebarItem) {
+    Task {
+      do {
+        try await self.client.removeItemFromSidebar(roomId: item.roomId)
+      } catch {
+        self.logger.error("Failed to remove sidebar item. \(error.localizedDescription)")
+      }
+    }
+  }
+
+  func toggleFavorite(_ item: SidebarItem) {
+    Task {
+      do {
+        try await self.client.toggleSidebarFavorite(roomId: item.roomId)
+      } catch {
+        self.logger.error("Failed to toggle favorite. \(error.localizedDescription)")
+      }
     }
   }
 }

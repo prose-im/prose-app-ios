@@ -191,6 +191,12 @@ extension ProseCoreClient {
       destroyRoom: { roomId in
         try await client.destroyRoom(roomId: roomId)
       },
+      toggleSidebarFavorite: { roomId in
+        try await client.toggleSidebarFavorite(roomId: roomId)
+      },
+      removeItemFromSidebar: { roomId in
+        try await client.removeItemFromSidebar(roomId: roomId)
+      },
       requestUploadSlot: { fileName, fileSize, mediaType in
         try await client.requestUploadSlot(
           fileName: fileName,

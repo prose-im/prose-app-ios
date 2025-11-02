@@ -25,9 +25,24 @@ struct SidebarView: View {
             Section(isExpanded: Binding(section.$isExpanded)) {
               ForEach(section.items) { item in
                 NavigationLink {
-                  RoomView(model: self.model.roomModel(for: item))
+                  RoomView(model: self.model.roomModel(for: item)!)
                 } label: {
                   Row(item: item, avatar: self.model.avatars[item.roomId])
+                    .contextMenu {
+                      Button {
+                        self.model.toggleFavorite(item)
+                      } label: {
+                        Label("Toggle Favorite", systemImage: "star")
+                      }
+
+                      Divider()
+
+                      Button(role: .destructive) {
+                        self.model.removeItem(item)
+                      } label: {
+                        Label("Remove from sidebar", systemImage: "trash")
+                      }
+                    }
                 }
               }
             } header: {
