@@ -51,9 +51,18 @@ final class SidebarModel {
     }
   }
 
-  func roomModel(for item: SidebarItem) -> RoomModel {
-    withDependencies(from: self) {
-      RoomModel(sessionState: self.$sessionState, selectedItem: item)
+  func roomModel(for item: SidebarItem) -> RoomModel? {
+    guard let room = try? self.client.getConnectedRoom(roomId: item.roomId) else {
+      return nil
+    }
+
+    return withDependencies {
+      $0.client = self.client
+      $0.room = room
+    } operation: {
+      RoomModel(sessionState: self.$sessionState)
+    }
+  }
 
   func removeItem(_ item: SidebarItem) {
     Task {
@@ -80,11 +89,10 @@ private extension SidebarModel {
   func sidebarItemsDidChange(items: [SidebarItem]) {
     // Load avatars if needed…
     for item in items {
-      guard case let .directMessage(room) = item.room else {
-        continue
-      }
-
-      if let avatar = room.participants().first?.avatar, avatarTasks[item.roomId] == nil {
+      if
+        case let .directMessage(_, _, _, .some(avatar), _) = item.type,
+        avatarTasks[item.roomId] == nil
+      {
         self.avatarTasks[item.roomId] = Task { [weak self] in
           let url = try await self?.client.loadAvatar(avatar: avatar)
           self?.avatars[item.roomId] = url

@@ -13,19 +13,18 @@ public final class ChatModel {
   @ObservationIgnored @SharedReader var sessionState: SessionState
 
   @ObservationIgnored @Dependency(\.client) var client
+  @ObservationIgnored @Dependency(\.room) var room
   @ObservationIgnored @Dependency(\.logger[category: "Chat"]) var logger
 
-  let selectedItem: SidebarItem
   let messageInputModel: MessageInputModel
 
   var error: UIError?
   var messages = IdentifiedArrayOf<Message>()
   var webViewIsReady = false
 
-  public init(sessionState: SharedReader<SessionState>, selectedItem: SidebarItem) {
+  public init(sessionState: SharedReader<SessionState>) {
     self._sessionState = sessionState
-    self.selectedItem = selectedItem
-    self.messageInputModel = MessageInputModel(selectedItem: selectedItem)
+    self.messageInputModel = MessageInputModel()
   }
 
   func task() async {
@@ -34,7 +33,7 @@ public final class ChatModel {
     for await event in self.client.events() {
       guard
         case let .roomChanged(room: room, type: roomEvent) = event,
-        room.id == self.selectedItem.roomId
+        room.id == self.room.id
       else {
         continue
       }
@@ -53,7 +52,7 @@ private extension ChatModel {
     do {
       self.error = nil
 
-      let result = try await self.selectedItem.room.baseRoom.loadLatestMessages()
+      let result = try await self.room.baseRoom.loadLatestMessages()
       self.logger.info("Loaded \(result.messages.count) messages.")
 
       self.messages = .init(uniqueElements: result.messages.map {
@@ -65,7 +64,7 @@ private extension ChatModel {
   }
 
   func handleRoomEvent(_ event: ClientRoomEventType) async throws {
-    let room = self.selectedItem.room.baseRoom
+    let room = self.room.baseRoom
 
     switch event {
     case let .messagesAppended(messageIds), let .messagesUpdated(messageIds):

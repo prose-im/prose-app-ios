@@ -191,6 +191,9 @@ extension ProseCoreClient {
       destroyRoom: { roomId in
         try await client.destroyRoom(roomId: roomId)
       },
+      getConnectedRoom: { roomId in
+        try client.getConnectedRoom(roomId: roomId)
+      },
       toggleSidebarFavorite: { roomId in
         try await client.toggleSidebarFavorite(roomId: roomId)
       },

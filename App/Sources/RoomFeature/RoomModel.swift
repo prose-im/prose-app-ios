@@ -11,18 +11,19 @@ import Foundation
 @MainActor @Observable
 public final class RoomModel {
   @ObservationIgnored @SharedReader var sessionState: SessionState
-  @ObservationIgnored @Dependency(\.client) var client: ProseCoreClient
+  @ObservationIgnored @Dependency(\.client) var client
+  @ObservationIgnored @Dependency(\.room) var room
   @ObservationIgnored @Dependency(\.logger[category: "Room"]) var logger
 
-  let selectedItem: SidebarItem
   let chatModel: ChatModel
 
+  var name: String = ""
   var messages = IdentifiedArrayOf<Message>()
 
-  public init(sessionState: SharedReader<SessionState>, selectedItem: SidebarItem) {
+  public init(sessionState: SharedReader<SessionState>) {
     self._sessionState = sessionState
-    self.selectedItem = selectedItem
-    self.chatModel = ChatModel(sessionState: sessionState, selectedItem: selectedItem)
+    self.chatModel = ChatModel(sessionState: sessionState)
+    self.name = self.room.baseRoom.name()
   }
 
   func task() async {
@@ -31,7 +32,7 @@ public final class RoomModel {
     for await event in self.client.events() {
       guard
         case let .roomChanged(room, type) = event,
-        room.id == selectedItem.roomId
+        room.id == self.room.id
       else {
         continue
       }
@@ -49,7 +50,7 @@ public final class RoomModel {
 private extension RoomModel {
   func markAsRead() async {
     do {
-      try await self.selectedItem.room.baseRoom.markAsRead()
+      try await self.room.baseRoom.markAsRead()
     } catch {
       self.logger.error("Failed to mark room as read. \(error.localizedDescription)")
     }

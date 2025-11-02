@@ -21,38 +21,66 @@ struct SidebarView: View {
         Text("Loading…")
       } else {
         List {
-          ForEach(self.model.sections) { section in
-            Section(isExpanded: Binding(section.$isExpanded)) {
-              ForEach(section.items) { item in
-                NavigationLink {
-                  RoomView(model: self.model.roomModel(for: item)!)
-                } label: {
-                  Row(item: item, avatar: self.model.avatars[item.roomId])
-                    .contextMenu {
-                      Button {
-                        self.model.toggleFavorite(item)
-                      } label: {
-                        Label("Toggle Favorite", systemImage: "star")
-                      }
-
-                      Divider()
-
-                      Button(role: .destructive) {
-                        self.model.removeItem(item)
-                      } label: {
-                        Label("Remove from sidebar", systemImage: "trash")
-                      }
-                    }
-                }
-              }
-            } header: {
-              Text(verbatim: section.name)
-            }
+          ForEach(self.model.sections) {
+            self.section(with: $0)
           }
         }.listStyle(.sidebar)
       }
     }
     .task { await self.model.task() }
+  }
+}
+
+private extension SidebarView {
+  @ViewBuilder
+  func section(with section: SidebarModel.Section) -> some View {
+    Section(isExpanded: Binding(section.$isExpanded)) {
+      ForEach(section.items) { item in
+        NavigationLink {
+          if let model = self.model.roomModel(for: item) {
+            RoomView(model: model)
+          } else {
+            ContentUnavailableView("Room is gone", systemImage: "binoculars")
+          }
+        } label: {
+          self.row(with: item)
+        }
+      }
+    } header: {
+      HStack {
+        Text(verbatim: section.name)
+        Spacer()
+        Button(action: {
+          print("Implement me")
+        }) {
+          Image(systemName: "plus")
+            .font(.caption)
+            .foregroundColor(Color(.label))
+            .padding(4)
+            .background(Circle().fill(Color(.secondarySystemFill)))
+        }
+      }
+    }
+  }
+
+  @ViewBuilder
+  func row(with item: SidebarItem) -> some View {
+    Row(item: item, avatar: self.model.avatars[item.roomId])
+      .contextMenu {
+        Button {
+          self.model.toggleFavorite(item)
+        } label: {
+          Label("Toggle Favorite", systemImage: "star")
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+          self.model.removeItem(item)
+        } label: {
+          Label("Remove from sidebar", systemImage: "trash")
+        }
+      }
   }
 }
 
@@ -65,9 +93,23 @@ private struct Row: View {
       self.icon
       Text(verbatim: self.item.name)
 
-      if let availability = self.item.availability {
+      if case let .directMessage(availability, _, _, _, status) = self.item.type {
         AvailabilityIndicator(availability)
           .size(8)
+
+        if let status {
+          HStack(spacing: 2) {
+            Text(verbatim: status.emoji)
+
+            if let text = status.status {
+              Text(verbatim: text)
+                .lineLimit(1)
+            }
+          }
+          .padding(.leading, 4)
+          .foregroundStyle(.secondary)
+          .font(.footnote)
+        }
       }
 
       Spacer()
@@ -85,19 +127,35 @@ private struct Row: View {
     }
   }
 
+  @ViewBuilder
   var icon: some View {
-    AsyncImage(url: self.avatar) { image in
-      image
-        .resizable()
-        .aspectRatio(contentMode: .fill)
-    } placeholder: {
-      Color.gray.opacity(0.2)
-        .overlay(
-          Image(systemName: "bubble.fill")
-            .font(.caption)
-            .foregroundColor(.gray.opacity(0.7)),
-        )
+    Group {
+      switch self.item.type {
+      case let .directMessage(_, initials, color, _, _):
+        AsyncImage(url: self.avatar) { image in
+          image
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+        } placeholder: {
+          Color(color)
+            .overlay(
+              Text(verbatim: initials)
+                .font(.caption2)
+                .fontWeight(.bold)
+                .foregroundColor(.white),
+            )
+        }
+      case .group:
+        Text("@")
+      case .privateChannel:
+        Image(systemName: "lock")
+      case .publicChannel:
+        Image(systemName: "circle.grid.2x2")
+      case .generic:
+        Image(systemName: "bubble")
+      }
     }
+    .foregroundStyle(.blue)
     .frame(width: 24, height: 24)
     .clipShape(RoundedRectangle(cornerRadius: 6))
   }

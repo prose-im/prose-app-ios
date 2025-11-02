@@ -10,20 +10,17 @@ import Foundation
 @MainActor @Observable
 public final class MessageInputModel {
   @ObservationIgnored @Dependency(\.logger[category: "Chat"]) var logger
-
-  let selectedItem: SidebarItem
+  @ObservationIgnored @Dependency(\.room) var room
 
   var messageText: String = "" { didSet { self.validate() } }
   var canSendMessage = false
 
-  init(selectedItem: SidebarItem) {
-    self.selectedItem = selectedItem
-  }
+  init() {}
 
   func sendMessage() {
     Task { [messageText = self.messageText] in
       do {
-        try await self.selectedItem.room.baseRoom.sendMessage(request: .init(
+        try await self.room.baseRoom.sendMessage(request: .init(
           body: .init(text: messageText),
           attachments: [],
         ))

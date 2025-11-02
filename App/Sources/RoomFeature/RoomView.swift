@@ -17,7 +17,7 @@ public struct RoomView: View {
 
   public var body: some View {
     ChatView(model: self.model.chatModel)
-      .navigationBarTitle(Text(self.model.selectedItem.name))
+      .navigationBarTitle(Text(self.model.name))
       .navigationBarTitleDisplayMode(.inline)
       .task {
         await self.model.task()

@@ -64,6 +64,7 @@ public struct ProseCoreClient: Sendable {
   public var createPrivateChannel: @Sendable (_ name: String) async throws -> RoomId
   public var joinRoom: @Sendable (_ roomId: MucId, _ password: String?) async throws -> RoomId
   public var destroyRoom: @Sendable (_ roomId: MucId) async throws -> Void
+  public var getConnectedRoom: @Sendable (_ roomId: RoomId) throws -> RoomEnvelope?
 
   public var toggleSidebarFavorite: @Sendable (_ roomId: RoomId) async throws -> Void
   public var removeItemFromSidebar: @Sendable (_ roomId: RoomId) async throws -> Void

@@ -6,62 +6,98 @@
 import Foundation
 import ProseSDK
 
-public struct SidebarItem: Equatable {
+public struct SidebarItem: Equatable, Hashable {
+  public enum Kind: Equatable, Hashable {
+    case directMessage(
+      availability: Availability,
+      initials: String,
+      color: HexColor,
+      avatar: Avatar?,
+      status: UserStatus?,
+    )
+    case group
+    case privateChannel
+    case publicChannel
+    case generic
+  }
+
+  public struct User: Equatable, Hashable {
+    public var availability: Availability
+    public var initials: String
+    public var color: HexColor
+    public var avatar: Avatar?
+    public var status: UserStatus?
+  }
+
   public var name: String
-  public var room: RoomEnvelope
+  public var roomId: RoomId
+  public var type: Kind
+  public var roomState: RoomState
   public var isFavorite: Bool
   public var hasDraft: Bool
   public var unreadCount: UInt32
   public var mentionsCount: UInt32
-  public var avatar: URL?
 }
 
-public extension SidebarItem {
-  /// Available if the underlying room is a Direct Message
-  var availability: Availability? {
-    switch self.room {
-    case let .directMessage(room):
-      room.participants().first?.availability
-    default:
-      nil
-    }
-  }
-
-  var roomId: RoomId {
-    self.room.id
-  }
-}
-
-extension SidebarItem: Identifiable, Hashable {
+extension SidebarItem: Identifiable {
   public var id: Int {
     self.hashValue
-  }
-
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(self.name)
-    hasher.combine(self.availability)
-    hasher.combine(self.isFavorite)
-    hasher.combine(self.hasDraft)
-    hasher.combine(self.unreadCount)
-    hasher.combine(self.mentionsCount)
-    hasher.combine(self.avatar)
   }
 }
 
 extension SidebarItem: Comparable {
   public static func < (lhs: Self, rhs: Self) -> Bool {
-    lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+    switch (lhs.type, rhs.type) {
+    case
+      (.directMessage, .group),
+      (.privateChannel, .publicChannel),
+      (.privateChannel, .generic),
+      (.publicChannel, .generic):
+      true
+    case
+      (.group, .directMessage),
+      (.publicChannel, .privateChannel),
+      (.generic, .privateChannel),
+      (.generic, .publicChannel):
+      false
+    case (.directMessage, _), (.group, _), (.privateChannel, _), (.publicChannel, _), (.generic, _):
+      lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+    }
   }
 }
 
 public extension SidebarItem {
   init(sdkSidebarItem: ProseSDK.SidebarItem) {
     self.name = sdkSidebarItem.name
-    self.room = sdkSidebarItem.room
+    self.roomId = sdkSidebarItem.roomId
+    self.type = .init(sdkType: sdkSidebarItem.type)
+    self.roomState = sdkSidebarItem.roomState
     self.isFavorite = sdkSidebarItem.isFavorite
     self.hasDraft = sdkSidebarItem.hasDraft
     self.unreadCount = sdkSidebarItem.unreadCount
     self.mentionsCount = sdkSidebarItem.mentionsCount
-    self.avatar = nil
+  }
+}
+
+extension SidebarItem.Kind {
+  init(sdkType: SidebarItemType) {
+    switch sdkType {
+    case let .directMessage(availability, initials, color, avatar, status):
+      self = .directMessage(
+        availability: availability,
+        initials: initials,
+        color: color,
+        avatar: avatar,
+        status: status,
+      )
+    case .group:
+      self = .group
+    case .privateChannel:
+      self = .privateChannel
+    case .publicChannel:
+      self = .publicChannel
+    case .generic:
+      self = .generic
+    }
   }
 }

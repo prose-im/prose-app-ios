@@ -15,7 +15,7 @@ extension SidebarModel.Section {
     var channels = [SidebarItem]()
 
     for item in items {
-      switch item.room {
+      switch item.type {
       case _ where item.isFavorite:
         favorites.append(item)
 
