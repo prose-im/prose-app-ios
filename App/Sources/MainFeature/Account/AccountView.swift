@@ -26,8 +26,8 @@ struct AccountView: View {
                   .foregroundColor(.gray),
               )
           }
-          .frame(width: 56, height: 56)
-          .clipShape(RoundedRectangle(cornerRadius: 12))
+          .frame(width: 48, height: 48)
+          .clipShape(RoundedRectangle(cornerRadius: 8))
 
           AvailabilityIndicator(self.model.account.availability)
             .isOwnStatus(true)
