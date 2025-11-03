@@ -13,14 +13,16 @@ extension ProseCoreClient {
   static func live(userId: UserId) async throws -> Self {
     @Dependency(\.logger[category: "Client"]) var logger
 
-    let connectionStatus = CurrentValueSubject<ConnectionStatus, Never>(.disconnected)
+    let connectionStatus = Mutex<CurrentValueSubject<ConnectionStatus, Never>>(.init(.disconnected))
     let events = PassthroughSubject<ClientEvent, Never>()
 
     let client = try await Client(
       cacheDir: .temporaryDirectory
         .appending(component: "Accounts")
         .appending(component: userId),
-      delegate: ProseClientDelegate(subject: events),
+      delegate: ProseClientDelegate(subject: events) {
+        connectionStatus.withLock { $0.value = .disconnected }
+      },
       config: .init(
         clientName: "Prose iOS",
         clientVersion: "beta",
@@ -39,24 +41,27 @@ extension ProseCoreClient {
       backoff: Duration = .seconds(3),
       numberOfRetries: Int = 3,
     ) async throws {
-      guard
-        connectionStatus.value != .connected,
-        connectionStatus.value != .connecting
-      else {
-        return
+      let needsConnection = connectionStatus.withLock {
+        guard $0.value != .connected, $0.value != .connecting else {
+          return false
+        }
+        $0.value = .connecting
+        return true
       }
 
-      connectionStatus.value = .connecting
+      guard needsConnection else {
+        return
+      }
 
       do {
         logger.info("Connecting \(credentials.id)…")
         try await client.connect(userId: credentials.id, password: credentials.password)
-        connectionStatus.value = .connected
+        connectionStatus.withLock { $0.value = .connected }
         logger.info("Connected \(credentials.id).")
       } catch {
         logger.info("Connection failed for \(credentials.id).")
         if numberOfRetries < 1 {
-          connectionStatus.value = .disconnected
+          connectionStatus.withLock { $0.value = .disconnected }
           throw error
         }
 
@@ -71,10 +76,7 @@ extension ProseCoreClient {
 
     return .init(
       connectionStatus: {
-        connectionStatus
-          .removeDuplicates()
-          .buffer(size: 50, prefetch: .byRequest, whenFull: .dropOldest)
-          .values
+        AsyncStream(connectionStatus.withLock { $0.removeDuplicates() }.values)
       },
       events: {
         events
@@ -91,7 +93,7 @@ extension ProseCoreClient {
       },
       disconnect: {
         logger.info("Disconnecting…")
-        connectionStatus.value = .disconnected
+        connectionStatus.withLock { $0.value = .disconnected }
         try await client.disconnect()
         logger.info("Disconnected.")
       },
@@ -220,12 +222,21 @@ extension ProseCoreClient {
 
 private final class ProseClientDelegate: ClientDelegate {
   private let subject: PassthroughSubject<ClientEvent, Never>
+  private let onDisconnect: @Sendable () -> Void
 
-  init(subject: PassthroughSubject<ClientEvent, Never>) {
+  init(
+    subject: PassthroughSubject<ClientEvent, Never>,
+    onDisconnect: @Sendable @escaping () -> Void,
+  ) {
     self.subject = subject
+    self.onDisconnect = onDisconnect
   }
 
   func handleEvent(event: ClientEvent) {
+    if case .connectionStatusChanged(event: .disconnect) = event {
+      self.onDisconnect()
+    }
+
     self.subject.send(event)
   }
 }
