@@ -28,5 +28,8 @@ struct MessageInputView: View {
     }
     .padding(.horizontal)
     .padding(.bottom, 6)
+    .task {
+      await self.model.task()
+    }
   }
 }

@@ -29,6 +29,7 @@ final class SidebarModel {
   @ObservationIgnored @Dependency(\.logger[category: "Sidebar"]) var logger
 
   var isLoading = true
+  var needsRefresh = false
   var sections: [Section] = Section.placeholderData
   var avatarTasks = [RoomId: Task<Void, Error>]()
   var avatars = [RoomId: URL]()
@@ -40,6 +41,11 @@ final class SidebarModel {
   }
 
   func task() async {
+    if self.needsRefresh {
+      self.needsRefresh = false
+      await self.sidebarItemsDidChange(items: self.client.sidebarItems())
+    }
+
     for await event in self.client.events() {
       switch event {
       case .sidebarChanged:
@@ -48,6 +54,10 @@ final class SidebarModel {
         continue
       }
     }
+
+    // If we're cancelled because our view was dismissed make sure that we reload the data after
+    // becoming visible again since it might have changed…
+    self.needsRefresh = true
   }
 
   func roomModel(for item: SidebarItem) -> RoomModel? {

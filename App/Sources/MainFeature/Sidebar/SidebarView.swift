@@ -114,6 +114,11 @@ private struct Row: View {
 
       Spacer()
 
+      if self.item.hasDraft {
+        Image(systemName: "pencil")
+          .foregroundStyle(.secondary)
+      }
+
       if self.item.mentionsCount > 0 || self.item.unreadCount > 0 {
         Text("\(self.item.mentionsCount > 0 ? "@" : String(self.item.unreadCount))")
           .font(.caption)
