@@ -7,6 +7,7 @@
 import Domain
 import Foundation
 import Synchronization
+import Toolbox
 import UIKit
 
 extension ProseCoreClient {
@@ -40,9 +41,10 @@ extension ProseCoreClient {
       credentials: Credentials,
       backoff: Duration = .seconds(3),
       numberOfRetries: Int = 3,
+      ignoreCurrentStatus: Bool = false,
     ) async throws {
       let needsConnection = connectionStatus.withLock {
-        guard $0.value != .connected, $0.value != .connecting else {
+        guard ignoreCurrentStatus || ($0.value != .connected && $0.value != .connecting) else {
           return false
         }
         $0.value = .connecting
@@ -55,7 +57,9 @@ extension ProseCoreClient {
 
       do {
         logger.info("Connecting \(credentials.id)…")
-        try await client.connect(userId: credentials.id, password: credentials.password)
+        try await withTimeout(duration: .seconds(10)) {
+          try await client.connect(userId: credentials.id, password: credentials.password)
+        }
         connectionStatus.withLock { $0.value = .connected }
         logger.info("Connected \(credentials.id).")
       } catch {
@@ -65,11 +69,14 @@ extension ProseCoreClient {
           throw error
         }
 
+        logger.info("Retrying connection for \(credentials.id) in \(backoff.formatted()).")
         try await Task.sleep(for: backoff)
+        logger.info("Retrying connection for \(credentials.id)…")
         try await connectWithBackoff(
           credentials: credentials,
           backoff: backoff * 2,
           numberOfRetries: numberOfRetries - 1,
+          ignoreCurrentStatus: true,
         )
       }
     }

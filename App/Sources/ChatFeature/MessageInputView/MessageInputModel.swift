@@ -8,7 +8,9 @@ import Domain
 import Foundation
 
 @MainActor @Observable
-public final class MessageInputModel {
+final class MessageInputModel {
+  @ObservationIgnored @SharedReader var account: Account
+
   @ObservationIgnored @Dependency(\.logger[category: "Chat"]) var logger
   @ObservationIgnored @Dependency(\.room) var room
 
@@ -20,11 +22,16 @@ public final class MessageInputModel {
     }
   }
 
-  var canSendMessage = false
+  var canSendMessage: Bool {
+    self.messageText.contains(where: { !$0.isWhitespace }) &&
+      self.account.connectionStatus == .connected
+  }
 
   var saveDraftTask: Task<Void, Never>?
 
-  init() {}
+  init(account: SharedReader<Account>) {
+    self._account = account
+  }
 
   func task() async {
     if let draft = try? await self.room.baseRoom.loadDraft() {
@@ -50,8 +57,6 @@ public final class MessageInputModel {
 
 private extension MessageInputModel {
   func messageTextDidChange() {
-    self.canSendMessage = !self.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-
     self.saveDraftTask?.cancel()
     self.saveDraftTask = Task { [message = self.messageText] in
       do {

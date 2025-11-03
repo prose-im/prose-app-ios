@@ -6,6 +6,7 @@
 import ChatFeature
 import Domain
 import IdentifiedCollections
+import SharedUI
 import SwiftUI
 
 public struct RoomView: View {
@@ -16,11 +17,19 @@ public struct RoomView: View {
   }
 
   public var body: some View {
-    ChatView(model: self.model.chatModel)
-      .navigationBarTitle(Text(self.model.name))
-      .navigationBarTitleDisplayMode(.inline)
-      .task {
-        await self.model.task()
+    ZStack(alignment: .top) {
+      ChatView(model: self.model.chatModel)
+        .navigationBarTitle(Text(self.model.name))
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+          await self.model.task()
+        }
+
+      if self.model.account.connectionStatus != .connected {
+        OfflineBanner(isConnecting: self.model.account.connectionStatus == .connecting) {
+          self.model.reconnect()
+        }.padding(.horizontal)
       }
+    }
   }
 }

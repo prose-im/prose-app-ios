@@ -19,6 +19,7 @@ final class AccountModel {
   @Dependency(\.credentials) var credentials
   @Dependency(\.connectivity) var connectivity
   @Dependency(\.scenePhase) var scenePhase
+  @Dependency(\.logger[category: "Account"]) var logger
 
   private var cancellables = Set<AnyCancellable>()
 
@@ -33,6 +34,13 @@ final class AccountModel {
       try await self.client.startObservingRooms()
 
       await self.loadAccountData()
+    }.store(in: &self.cancellables)
+
+    // Observe account connection status…
+    Task { [client, account = self.$account] in
+      for await status in client.connectionStatus() {
+        account.withLock { $0.connectionStatus = status }
+      }
     }.store(in: &self.cancellables)
   }
 }
@@ -74,7 +82,7 @@ private extension AccountModel {
         }
       }
     } catch {
-      print("Failed to load account data.", error)
+      self.logger.error("Failed to load account data. \(error.localizedDescription)")
     }
   }
 

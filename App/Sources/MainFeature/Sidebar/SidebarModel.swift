@@ -43,7 +43,12 @@ final class SidebarModel {
   func task() async {
     if self.needsRefresh {
       self.needsRefresh = false
-      await self.sidebarItemsDidChange(items: self.client.sidebarItems())
+
+      // Do not try to reload if we're not connected. Once we're connected we'll receive
+      // a new event and will load automatically.
+      if self.sessionState.selectedAccount.connectionStatus == .connected {
+        await self.sidebarItemsDidChange(items: self.client.sidebarItems())
+      }
     }
 
     for await event in self.client.events() {
@@ -69,7 +74,7 @@ final class SidebarModel {
       $0.client = self.client
       $0.room = room
     } operation: {
-      RoomModel(sessionState: self.$sessionState)
+      RoomModel(account: self.$sessionState.selectedAccount)
     }
   }
 

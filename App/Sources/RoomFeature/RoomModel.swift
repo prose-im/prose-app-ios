@@ -10,8 +10,10 @@ import Foundation
 
 @MainActor @Observable
 public final class RoomModel {
-  @ObservationIgnored @SharedReader var sessionState: SessionState
+  @ObservationIgnored @SharedReader var account: Account
+
   @ObservationIgnored @Dependency(\.client) var client
+  @ObservationIgnored @Dependency(\.credentials) var credentials
   @ObservationIgnored @Dependency(\.room) var room
   @ObservationIgnored @Dependency(\.logger[category: "Room"]) var logger
 
@@ -20,9 +22,9 @@ public final class RoomModel {
   var name: String = ""
   var messages = IdentifiedArrayOf<Message>()
 
-  public init(sessionState: SharedReader<SessionState>) {
-    self._sessionState = sessionState
-    self.chatModel = ChatModel(sessionState: sessionState)
+  public init(account: SharedReader<Account>) {
+    self._account = account
+    self.chatModel = ChatModel(account: account)
     self.name = self.room.baseRoom.name()
   }
 
@@ -42,6 +44,14 @@ public final class RoomModel {
         await self.markAsRead()
       default:
         continue
+      }
+    }
+  }
+
+  func reconnect() {
+    if let credentials = try? self.credentials.loadCredentials(self.account.id) {
+      Task {
+        try? await self.client.connect(credentials, retry: false)
       }
     }
   }

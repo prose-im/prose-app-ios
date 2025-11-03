@@ -10,7 +10,7 @@ import SharedUI
 
 @MainActor @Observable
 public final class ChatModel {
-  @ObservationIgnored @SharedReader var sessionState: SessionState
+  @ObservationIgnored @SharedReader var account: Account
 
   @ObservationIgnored @Dependency(\.client) var client
   @ObservationIgnored @Dependency(\.room) var room
@@ -22,9 +22,9 @@ public final class ChatModel {
   var messages = IdentifiedArrayOf<Message>()
   var webViewIsReady = false
 
-  public init(sessionState: SharedReader<SessionState>) {
-    self._sessionState = sessionState
-    self.messageInputModel = MessageInputModel()
+  public init(account: SharedReader<Account>) {
+    self._account = account
+    self.messageInputModel = MessageInputModel(account: account)
   }
 
   func task() async {
