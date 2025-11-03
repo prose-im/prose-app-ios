@@ -38,8 +38,13 @@ struct MessagesView: UIViewRepresentable {
     let logger = context.coordinator.model.logger
     let contentController = WKUserContentController()
 
-    contentController.addDOMReadyHandler {
-      logger.info("DOM ready.")
+    contentController.addDOMReadyHandler { result in
+      switch result {
+      case .ready:
+        logger.info("DOM ready.")
+      case .timeout:
+        logger.error("DOM timed out.")
+      }
       context.coordinator.model.webViewIsReady = true
     }
 

@@ -6,7 +6,12 @@
 import Foundation
 import WebKit
 
-public extension WKUserContentController {
+enum WebViewLoadResult: String {
+  case ready
+  case timeout
+}
+
+extension WKUserContentController {
   func addMessageEventHandler<T: Decodable>(
     for event: MessageEvent.Kind,
     handler: @escaping (Result<T, JSEventError>) -> Void,
@@ -23,20 +28,48 @@ public extension WKUserContentController {
     )
   }
 
-  func addDOMReadyHandler(_ handler: @escaping () -> Void) {
+  func addDOMReadyHandler(_ handler: @escaping (WebViewLoadResult) -> Void) {
     let script = """
+    function waitForMessagingContext() {
+      if (window.MessagingContext !== undefined) {
+        window.webkit.messageHandlers.domReady.postMessage('ready');
+        return;
+      }
+
+      // Poll every 50ms for ~10 seconds
+      let attempts = 0;
+      const maxAttempts = 200;
+
+      const interval = setInterval(() => {
+        attempts++;
+
+        if (window.MessagingContext !== undefined) {
+          clearInterval(interval);
+          window.webkit.messageHandlers.domReady.postMessage('ready');
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          window.webkit.messageHandlers.domReady.postMessage('timeout');
+        }
+      }, 50);
+    }
+
     if (document.readyState === 'complete') {
-      window.webkit.messageHandlers.domReady.postMessage('ready');
+      waitForMessagingContext();
     } else {
       window.addEventListener('load', function() {
-        window.webkit.messageHandlers.domReady.postMessage('ready');
+        waitForMessagingContext();
       });
     }
     """
 
-    let scriptMessageHandler = ScriptMessageHandler<Void> { _ in
-      handler()
+    let scriptMessageHandler = ScriptMessageHandler<WebViewLoadResult> { message in
+      let result = (message as? String)
+        .flatMap(WebViewLoadResult.init(rawValue:))
+        .expect("Received unexpected result from ready handler")
+
+      handler(result)
     }
+
     self.add(scriptMessageHandler, name: "domReady")
     self.addUserScript(
       WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: true),
