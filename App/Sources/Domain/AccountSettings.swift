@@ -21,7 +21,7 @@ public extension SharedKey where Self == FileStorageKey<AccountSettings>.Default
     Self[
       .fileStorage(.documentsDirectory
         .appending(component: "Accounts")
-        .appending(component: userId)
+        .appending(component: userId.rawValue)
         .appending(component: "settings.json")),
       default: .init(),
     ]

@@ -57,10 +57,14 @@ extension LoginModel {
 
 private extension LoginModel {
   func performLogin() async throws {
+    guard let userId = UserId(self.userId) else {
+      return
+    }
+
     self.isLoggingIn = true
     defer { self.isLoggingIn = false }
 
-    let credentials = Credentials(id: self.userId, password: self.password)
+    let credentials = Credentials(id: userId, password: self.password)
 
     do {
       try await self.accounts.addEphemeralAccount(credentials.id)
@@ -82,7 +86,6 @@ private extension LoginModel {
 
 private extension LoginModel {
   func validate() {
-    self.isFormValid =
-      self.userId.contains("@") && self.userId.contains(".") && !self.password.isEmpty
+    self.isFormValid = UserId(self.userId) != nil && !self.password.isEmpty
   }
 }

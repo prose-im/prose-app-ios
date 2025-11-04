@@ -10,6 +10,7 @@
 @_exported import struct ProseSDK.AccountInfo
 @_exported import enum ProseSDK.Availability
 @_exported import class ProseSDK.Avatar
+@_exported import struct ProseSDK.AvatarBundle
 @_exported import class ProseSDK.Client
 @_exported import protocol ProseSDK.ClientDelegate
 @_exported import enum ProseSDK.ClientEvent

@@ -8,12 +8,13 @@ let package = Package(
   platforms: [.iOS(.v18), .macOS(.v13)],
   products: [
     .library(name: "App", targets: ["App"]),
+    .library(name: "TokenTextField", targets: ["TokenTextField"]),
   ],
   dependencies: [
     //    .package(path: "../../prose-core-client/master/bindings/prose-sdk-ffi/ProseSDK"),
     .package(
       url: "https://github.com/prose-im/prose-wrapper-swift.git",
-      .upToNextMajor(from: "0.0.16"),
+      .upToNextMajor(from: "0.0.17"),
     ),
     .package(
       url: "https://github.com/pointfreeco/swift-dependencies.git",
@@ -53,6 +54,9 @@ let package = Package(
       name: "MainFeature",
       dependencies: [
         "RoomFeature",
+        "RoomPickerFeature",
+        .product(name: "CasePaths", package: "swift-case-paths"),
+        .product(name: "SwiftUINavigation", package: "swift-navigation"),
       ],
     ),
     .feature(
@@ -71,7 +75,17 @@ let package = Package(
       name: "ChatFeature",
       resources: [.copy("Messages/HTML")],
     ),
+    .feature(
+      name: "RoomPickerFeature",
+    ),
 
+    .target(
+      name: "AvatarFeature",
+      dependencies: [
+        "Deps",
+        "Domain",
+      ],
+    ),
     .target(
       name: "Domain",
       dependencies: [
@@ -96,10 +110,12 @@ let package = Package(
       ],
     ),
     .target(name: "Toolbox"),
+    .target(name: "TokenTextField"),
     .target(
       name: "SharedUI",
       dependencies: [
         "Domain",
+        "TokenTextField",
       ],
     ),
 
@@ -117,6 +133,7 @@ extension Target {
     resources: [PackageDescription.Resource]? = nil,
   ) -> PackageDescription.Target {
     let commonDependencies: [Target.Dependency] = [
+      "AvatarFeature",
       "Deps",
       "Domain",
       "SharedUI",

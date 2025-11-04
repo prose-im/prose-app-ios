@@ -42,7 +42,7 @@ public extension Account {
     Account(
       id: userId,
       connectionStatus: .connecting,
-      name: userId,
+      name: userId.rawValue,
       avatar: nil,
       availability: .unavailable,
       status: nil,

@@ -30,8 +30,8 @@ public struct SessionState: Sendable {
 #if DEBUG
   public extension SessionState {
     static func mock(
-      accounts: [Account] = [.placeholder(for: "bot@prose.org")],
-      selectedAccountId: String = "bot@prose.org",
+      accounts: [Account] = [.placeholder(for: UserId("bot@prose.org")!)],
+      selectedAccountId: UserId = UserId("bot@prose.org")!,
     ) -> Self {
       .init(accounts: .init(uniqueElements: accounts), selectedAccountId: selectedAccountId)
     }

@@ -36,7 +36,7 @@ public extension CredentialsClient {
         let query: [CFString: Any] = [
           kSecClass: kSecClassGenericPassword,
           kSecAttrService: service,
-          kSecAttrAccount: id,
+          kSecAttrAccount: id.rawValue,
           kSecMatchLimit: kSecMatchLimitOne,
           kSecReturnAttributes: true,
           kSecReturnData: true,

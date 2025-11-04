@@ -9,10 +9,9 @@ import ProseSDK
 public struct SidebarItem: Equatable, Hashable {
   public enum Kind: Equatable, Hashable {
     case directMessage(
+      userId: UserId,
       availability: Availability,
-      initials: String,
-      color: HexColor,
-      avatar: Avatar?,
+      avatarBundle: AvatarBundle,
       status: UserStatus?,
     )
     case group
@@ -94,12 +93,11 @@ public extension SidebarItem {
 extension SidebarItem.Kind {
   init(sdkType: SidebarItemType) {
     switch sdkType {
-    case let .directMessage(availability, initials, color, avatar, status):
+    case let .directMessage(userId, availability, avatarBundle, status):
       self = .directMessage(
+        userId: userId,
         availability: availability,
-        initials: initials,
-        color: color,
-        avatar: avatar,
+        avatarBundle: avatarBundle,
         status: status,
       )
     case .group:

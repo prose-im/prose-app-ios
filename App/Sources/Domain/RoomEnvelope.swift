@@ -40,9 +40,9 @@ extension RoomId: @retroactive CustomStringConvertible {
   public var description: String {
     switch self {
     case let .user(id):
-      id
+      id.rawValue
     case let .muc(id):
-      id
+      id.rawValue
     }
   }
 }

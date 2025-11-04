@@ -54,7 +54,7 @@ extension ProseSDK.ParticipantId {
     case let .occupant(id):
       id
     case let .user(id):
-      id
+      id.rawValue
     }
   }
 }

@@ -20,7 +20,7 @@ extension ProseCoreClient {
     let client = try await Client(
       cacheDir: .temporaryDirectory
         .appending(component: "Accounts")
-        .appending(component: userId),
+        .appending(component: userId.rawValue),
       delegate: ProseClientDelegate(subject: events) {
         connectionStatus.withLock { $0.value = .disconnected }
       },

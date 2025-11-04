@@ -70,5 +70,7 @@ struct AccountView: View {
 }
 
 #Preview {
-  AccountView(model: .init(account: SharedReader(value: .placeholder(for: "bot@prose.org"))))
+  AccountView(
+    model: .init(account: SharedReader(value: .placeholder(for: UserId("bot@prose.org")!))),
+  )
 }

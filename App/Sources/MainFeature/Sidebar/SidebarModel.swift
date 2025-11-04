@@ -3,23 +3,29 @@
 // Copyright (c) 2025 Prose Foundation
 //
 
+import AvatarFeature
+import CasePaths
 import Deps
 import Domain
 import Foundation
 import RoomFeature
+import RoomPickerFeature
 import SwiftUI
+import SwiftUINavigation
 
 @MainActor @Observable
 final class SidebarModel {
-  struct Section: Identifiable {
-    var name: String
-    var items: [SidebarItem]
+  @CasePathable
+  enum Route {
+    case alert(AlertState<AlertAction>)
+    case channelPicker(ChannelPickerModel)
+    case contactPicker(ContactPickerModel)
+    case room(RoomModel)
+    case invalidRoom
+  }
 
-    @Shared var isExpanded: Bool
-
-    var id: String {
-      self.name
-    }
+  enum AlertAction {
+    case ok
   }
 
   @ObservationIgnored @SharedReader var sessionState: SessionState
@@ -28,11 +34,13 @@ final class SidebarModel {
   @ObservationIgnored @Dependency(\.client) var client
   @ObservationIgnored @Dependency(\.logger[category: "Sidebar"]) var logger
 
-  var isLoading = true
-  var needsRefresh = false
-  var sections: [Section] = Section.placeholderData
-  var avatarTasks = [RoomId: Task<Void, Error>]()
-  var avatars = [RoomId: URL]()
+  var route: Route?
+
+  private(set) var isLoading = true
+  private(set) var sections: [Section] = Section.placeholderData
+
+  private var avatarModels = [UserId: AvatarModel]()
+  private var needsRefresh = false
 
   init(sessionState: SharedReader<SessionState>) {
     self._sessionState = sessionState
@@ -65,8 +73,8 @@ final class SidebarModel {
     self.needsRefresh = true
   }
 
-  func roomModel(for item: SidebarItem) -> RoomModel? {
-    guard let room = try? self.client.getConnectedRoom(roomId: item.roomId) else {
+  func roomModel(for roomId: RoomId) -> RoomModel? {
+    guard let room = try? self.client.getConnectedRoom(roomId: roomId) else {
       return nil
     }
 
@@ -97,25 +105,92 @@ final class SidebarModel {
       }
     }
   }
+
+  func addChannel() {
+    self.route = withDependencies(from: self) {
+      .channelPicker(.init())
+    }
+  }
+
+  func addContact() {
+    self.route = withDependencies(from: self) {
+      .contactPicker(.init())
+    }
+  }
+
+  func avatarModel(for userId: UserId, bundle: AvatarBundle) -> AvatarModel {
+    if let model = self.avatarModels[userId] {
+      return model
+    }
+
+    let model = withDependencies(from: self) {
+      AvatarModel(userId: userId, bundle: bundle)
+    }
+    self.avatarModels[userId] = model
+    return model
+  }
+
+  func startConversation(with userIds: [UserId]) {
+    Task {
+      do {
+        let roomId = try await self.client.startConversation(participants: userIds)
+        self.navigateToRoom(roomId: roomId)
+      } catch {
+        self.route = .alert(AlertState {
+          TextState("Failed to start conversation")
+        } actions: {
+          ButtonState(action: .send(.ok)) {
+            TextState("Ok")
+          }
+        } message: {
+          TextState(verbatim: error.localizedDescription)
+        })
+      }
+    }
+  }
+
+  func addChannel(with action: ChannelPickerModel.Action) {
+    Task {
+      do {
+        let roomId = switch action {
+        case let .join(roomId):
+          try await self.client.joinRoom(roomId: roomId, password: nil)
+
+        case let .create(name, private: true):
+          try await self.client.createPrivateChannel(name: name)
+
+        case let .create(name, private: false):
+          try await self.client.createPublicChannel(name: name)
+        }
+        self.navigateToRoom(roomId: roomId)
+      } catch {
+        self.route = .alert(AlertState {
+          TextState("Failed to add channel")
+        } actions: {
+          ButtonState(action: .send(.ok)) {
+            TextState("Ok")
+          }
+        } message: {
+          TextState(verbatim: error.localizedDescription)
+        })
+      }
+    }
+  }
+
+  func alertActionTapped(action _: AlertAction?) {}
 }
 
 private extension SidebarModel {
   func sidebarItemsDidChange(items: [SidebarItem]) {
     self.isLoading = false
-
-    // Load avatars if needed…
-    for item in items {
-      if
-        case let .directMessage(_, _, _, .some(avatar), _) = item.type,
-        avatarTasks[item.roomId] == nil
-      {
-        self.avatarTasks[item.roomId] = Task { [weak self] in
-          let url = try await self?.client.loadAvatar(avatar: avatar)
-          self?.avatars[item.roomId] = url
-        }
-      }
-    }
-
     self.sections = Section.sectionsByGrouping(items: items, settings: self.$settings)
+  }
+
+  func navigateToRoom(roomId: RoomId) {
+    guard let model = self.roomModel(for: roomId) else {
+      self.route = .invalidRoom
+      return
+    }
+    self.route = .room(model)
   }
 }

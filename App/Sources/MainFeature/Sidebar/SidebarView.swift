@@ -3,10 +3,13 @@
 // Copyright (c) 2025 Prose Foundation
 //
 
+import AvatarFeature
 import Domain
 import RoomFeature
+import RoomPickerFeature
 import SharedUI
 import SwiftUI
+import SwiftUINavigation
 
 struct SidebarView: View {
   @Bindable var model: SidebarModel
@@ -27,6 +30,32 @@ struct SidebarView: View {
       .ignoresSafeArea()
     }
     .task { await self.model.task() }
+    .sheet(item: self.$model.route.channelPicker) { model in
+      ChannelPickerView(model: model) { action in
+        self.model.addChannel(with: action)
+      }
+    }
+    .sheet(item: self.$model.route.contactPicker) { model in
+      ContactPickerView(model: model) { userIds in
+        self.model.startConversation(with: userIds)
+      }
+    }
+    .alert(self.$model.route.alert) { action in
+      self.model.alertActionTapped(action: action)
+    }
+    .navigationDestination(item: self.$model.route.room) { model in
+      RoomView(model: model)
+    }
+    .navigationDestination(item: self.$model.route.invalidRoom) {
+      ContentUnavailableView("Room is gone", systemImage: "binoculars")
+    }
+    .navigationDestination(for: RoomId.self) { id in
+      if let model = self.model.roomModel(for: id) {
+        RoomView(model: model)
+      } else {
+        ContentUnavailableView("Room is gone", systemImage: "binoculars")
+      }
+    }
   }
 }
 
@@ -35,65 +64,95 @@ private extension SidebarView {
   func section(with section: SidebarModel.Section) -> some View {
     Section(isExpanded: Binding(section.$isExpanded)) {
       ForEach(section.items) { item in
-        NavigationLink {
-          if let model = self.model.roomModel(for: item) {
-            RoomView(model: model)
-          } else {
-            ContentUnavailableView("Room is gone", systemImage: "binoculars")
-          }
-        } label: {
+        NavigationLink(value: item.roomId) {
           self.row(with: item)
         }
       }
     } header: {
       HStack {
-        Text(verbatim: section.name)
-        Spacer()
-        Button(action: {
-          print("Implement me")
-        }) {
-          Image(systemName: "plus")
-            .font(.caption)
-            .foregroundColor(Color(.label))
-            .padding(4)
-            .background(Circle().fill(Color(.secondarySystemFill)))
+        switch section.kind {
+        case .favorites:
+          self.sectionHeader(title: "Favorites")
+
+        case .directMessages:
+          self.sectionHeader(title: "Direct Messages") {
+            self.model.addContact()
+          }
+
+        case .channels:
+          self.sectionHeader(title: "Channels") {
+            self.model.addChannel()
+          }
         }
-        .hiddenIfRedacted()
       }
     }
   }
 
   @ViewBuilder
+  func sectionHeader(title: LocalizedStringKey, action: (() -> Void)? = nil) -> some View {
+    Text(title)
+
+    if let action {
+      Spacer()
+      Button(action: action) {
+        Image(systemName: "plus")
+          .font(.caption)
+          .foregroundColor(Color(.label))
+          .padding(4)
+          .background(Circle().fill(Color(.secondarySystemFill)))
+      }
+      .hiddenIfRedacted()
+    }
+  }
+
+  @ViewBuilder
   func row(with item: SidebarItem) -> some View {
-    Row(item: item, avatar: self.model.avatars[item.roomId])
-      .contextMenu {
-        Button {
-          self.model.toggleFavorite(item)
-        } label: {
-          Label("Toggle Favorite", systemImage: "star")
-        }
-
-        Divider()
-
-        Button(role: .destructive) {
-          self.model.removeItem(item)
-        } label: {
-          Label("Remove from sidebar", systemImage: "trash")
+    Row(item: item) {
+      Group {
+        switch item.type {
+        case let .directMessage(userId, _, avatarBundle, _):
+          AvatarView(model: self.model.avatarModel(for: userId, bundle: avatarBundle)).size(24)
+        case .group:
+          Text("@")
+        case .privateChannel:
+          Image(systemName: "lock")
+        case .publicChannel:
+          Image(systemName: "circle.grid.2x2")
+        case .generic:
+          Image(systemName: "bubble")
         }
       }
+      .foregroundStyle(.blue)
+      .frame(width: 24, height: 24)
+    }
+    .contextMenu {
+      Button {
+        self.model.toggleFavorite(item)
+      } label: {
+        Label("Toggle Favorite", systemImage: "star")
+      }
+
+      Divider()
+
+      Button(role: .destructive) {
+        self.model.removeItem(item)
+      } label: {
+        Label("Remove from sidebar", systemImage: "trash")
+      }
+    }
   }
 }
 
-private struct Row: View {
+private struct Row<Icon: View>: View {
   let item: SidebarItem
-  let avatar: URL?
+  @ViewBuilder let icon: Icon
 
   var body: some View {
     HStack {
       self.icon
       Text(verbatim: self.item.name)
 
-      if case let .directMessage(availability, _, _, _, status) = self.item.type {
+      if case let .directMessage(_, availability, _, status) = self.item.type {
         AvailabilityIndicator(availability)
           .size(8)
 
@@ -130,38 +189,5 @@ private struct Row: View {
           .background(Capsule().fill(.blue))
       }
     }
-  }
-
-  @ViewBuilder
-  var icon: some View {
-    Group {
-      switch self.item.type {
-      case let .directMessage(_, initials, color, _, _):
-        AsyncImage(url: self.avatar) { image in
-          image
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-        } placeholder: {
-          Color(color)
-            .overlay(
-              Text(verbatim: initials)
-                .font(.caption2)
-                .fontWeight(.bold)
-                .foregroundColor(.white),
-            )
-        }
-      case .group:
-        Text("@")
-      case .privateChannel:
-        Image(systemName: "lock")
-      case .publicChannel:
-        Image(systemName: "circle.grid.2x2")
-      case .generic:
-        Image(systemName: "bubble")
-      }
-    }
-    .foregroundStyle(.blue)
-    .frame(width: 24, height: 24)
-    .clipShape(RoundedRectangle(cornerRadius: 6))
   }
 }

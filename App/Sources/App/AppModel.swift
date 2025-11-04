@@ -48,7 +48,7 @@ private extension AppModel {
     var selectedAccountId: UserId?
 
     for bookmark in bookmarks {
-      guard let credentials = try self.credentials.loadCredentials(bookmark.userId) else {
+      guard let credentials = try? self.credentials.loadCredentials(bookmark.userId) else {
         continue
       }
 
