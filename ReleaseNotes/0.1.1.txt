@@ -1,0 +1,11 @@
+- feat: Observe connectivity and scene phase (app foreground/background) to handle connection accordingly
+- feat: Show availability for DMs in sidebar
+- feat: Make sidebar sections collapsible and save state
+- feat: Display unread count in sidebar
+- feat: Add context menu to manage sidebar items
+- feat: Add user status, icons, avatar fallback to sidebar
+- feat: Show skeleton loader for sidebar
+- feat: Save & load drafts
+- feat: Show offline banner when client is disconnected
+- feat: Support joining/creating rooms from sidebar
+- fix: Wait for MessageContext to become available in WebView (sometimes messages were not rendered)
