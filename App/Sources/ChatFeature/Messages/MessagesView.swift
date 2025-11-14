@@ -10,6 +10,12 @@ import Toolbox
 import WebKit
 
 struct MessagesView: UIViewRepresentable {
+  struct Callbacks {
+    var showReactions: ((MessageId, EventOrigin) -> Void)?
+  }
+
+  var callbacks = Callbacks()
+
   @MainActor
   final class Coordinator: NSObject {
     /// This is the state of messages stored in the web view. It's used for diffing purposes.
@@ -52,14 +58,40 @@ struct MessagesView: UIViewRepresentable {
 //    contentController.addMessageEventHandler(for: .showMenu) { result in
 //      actions.send(.messageEvent(MessageEvent.showMenu, from: result))
 //    }
-//    // Allow toggling reactions
-//    contentController.addMessageEventHandler(for: .toggleReaction) { result in
-//      actions.send(.messageEvent(MessageEvent.toggleReaction, from: result))
-//    }
-//    // Enable reactions picker shortcut
-//    contentController.addMessageEventHandler(for: .showReactions) { result in
-//      actions.send(.messageEvent(MessageEvent.showReactions, from: result))
-//    }
+
+    // Allow toggling reactions
+    contentController
+      .addMessageEventHandler(for: .toggleReaction) { [model = context.coordinator.model] (
+        result: Result<
+          ToggleReactionHandlerPayload,
+          JSEventError,
+        >,
+      ) in
+        guard
+          case let .success(payload) = result,
+          let messageId = payload.id
+        else {
+          return
+        }
+
+        model.toggleReaction(for: messageId, reaction: payload.reaction)
+      }
+
+    // Enable reactions picker shortcut
+    if let showReactions = self.callbacks.showReactions {
+      contentController.addMessageEventHandler(for: .showReactions) { (result: Result<
+        ShowReactionsHandlerPayload,
+        JSEventError,
+      >) in
+        guard
+          case let .success(payload) = result,
+          let messageId = payload.id
+        else {
+          return
+        }
+        showReactions(messageId, payload.origin)
+      }
+    }
 //    // Our user either scroll to the beginning or the end of the message list
 //    contentController.addMessageEventHandler(for: .reachedEndOfList) { result in
 //      actions.send(.messageEvent(MessageEvent.reachedEndOfList, from: result))
@@ -119,7 +151,17 @@ struct MessagesView: UIViewRepresentable {
 
     self.updateMessages(webView, coordinator: context.coordinator)
   }
+}
 
+extension MessagesView {
+  func onShowReactions(_ handler: @escaping (MessageId, EventOrigin) -> Void) -> Self {
+    var view = self
+    view.callbacks.showReactions = handler
+    return view
+  }
+}
+
+private extension MessagesView {
   func updateMessages(_: WKWebView, coordinator: Coordinator) {
     guard coordinator.model.webViewIsReady else {
       return

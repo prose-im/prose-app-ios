@@ -3,18 +3,36 @@
 // Copyright (c) 2025 Prose Foundation
 //
 
+import CasePaths
 import Deps
 import Domain
 import Foundation
 import SharedUI
+import SwiftUI
 
 @MainActor @Observable
 public final class ChatModel {
+  @CasePathable
+  enum Route {
+    case emojiPicker(ReactionsModel)
+  }
+
   @ObservationIgnored @SharedReader var account: Account
 
   @ObservationIgnored @Dependency(\.client) var client
   @ObservationIgnored @Dependency(\.room) var room
   @ObservationIgnored @Dependency(\.logger[category: "Chat"]) var logger
+
+  var route: Route? {
+    didSet {
+      if
+        let model = self.route?[case: \.emojiPicker],
+        let emoji = model.emoji?.emoji
+      {
+        self.toggleReaction(for: model.messageId, reaction: emoji)
+      }
+    }
+  }
 
   let messageInputModel: MessageInputModel
 
@@ -42,6 +60,20 @@ public final class ChatModel {
         try await self.handleRoomEvent(roomEvent)
       } catch {
         self.logger.error("Failed to handle room event. Reason: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  func showEmojiPicker(for messageId: MessageId) {
+    self.route = .emojiPicker(.init(messageId: messageId))
+  }
+
+  func toggleReaction(for messageId: MessageId, reaction emoji: Emoji) {
+    Task {
+      do {
+        try await self.room.baseRoom.toggleReactionToMessage(messageId: messageId, emoji: emoji)
+      } catch {
+        self.logger.error("Failed to toggle emoji. \(error.localizedDescription)")
       }
     }
   }

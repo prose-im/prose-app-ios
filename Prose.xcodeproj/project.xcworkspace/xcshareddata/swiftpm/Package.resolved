@@ -1,5 +1,5 @@
 {
-  "originHash" : "396e240caf691368ebd931f7bff1bbf660db40fbb20e9253e1c8468f7bcaea30",
+  "originHash" : "b15be550d24748c2e54d821be27076a82471e0f4db004e265dc0cd1c39d64712",
   "pins" : [
     {
       "identity" : "combine-schedulers",
@@ -8,6 +8,14 @@
       "state" : {
         "revision" : "5928286acce13def418ec36d05a001a9641086f2",
         "version" : "1.0.3"
+      }
+    },
+    {
+      "identity" : "elegant-emoji-picker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/prose-im/Elegant-Emoji-Picker.git",
+      "state" : {
+        "revision" : "96d27fa06c3fd72870895b2b4c521a3129efc16e"
       }
     },
     {

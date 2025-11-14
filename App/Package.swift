@@ -40,6 +40,10 @@ let package = Package(
       url: "https://github.com/apple/swift-async-algorithms.git",
       .upToNextMajor(from: "1.0.4"),
     ),
+    .package(
+      url: "https://github.com/prose-im/Elegant-Emoji-Picker.git",
+      revision: "96d27fa06c3fd72870895b2b4c521a3129efc16e",
+    ),
   ],
   targets: [
     .feature(
@@ -47,7 +51,6 @@ let package = Package(
       dependencies: [
         "LoginFeature",
         "MainFeature",
-        .product(name: "CasePaths", package: "swift-case-paths"),
       ],
     ),
     .feature(
@@ -55,15 +58,10 @@ let package = Package(
       dependencies: [
         "RoomFeature",
         "RoomPickerFeature",
-        .product(name: "CasePaths", package: "swift-case-paths"),
-        .product(name: "SwiftUINavigation", package: "swift-navigation"),
       ],
     ),
     .feature(
       name: "LoginFeature",
-      dependencies: [
-        .product(name: "SwiftUINavigation", package: "swift-navigation"),
-      ],
     ),
     .feature(
       name: "RoomFeature",
@@ -73,6 +71,9 @@ let package = Package(
     ),
     .feature(
       name: "ChatFeature",
+      dependencies: [
+        .product(name: "ElegantEmojiPicker", package: "Elegant-Emoji-Picker"),
+      ],
       resources: [.copy("Messages/HTML")],
     ),
     .feature(
@@ -138,6 +139,8 @@ extension Target {
       "Domain",
       "SharedUI",
       "Toolbox",
+      .product(name: "CasePaths", package: "swift-case-paths"),
+      .product(name: "SwiftUINavigation", package: "swift-navigation"),
     ]
 
     return target(
