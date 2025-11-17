@@ -10,10 +10,18 @@ import Foundation
 @MainActor @Observable
 final class ReactionsModel: Identifiable {
   let messageId: MessageId
-  var emoji: Emoji?
+  let emojiSelected: (String) -> Void
 
-  init(messageId: MessageId) {
+  var emoji: Emoji? {
+    didSet {
+      if let emoji {
+        self.emojiSelected(emoji.emoji)
+      }
+    }
+  }
+
+  init(messageId: MessageId, emojiSelected: @escaping (String) -> Void) {
     self.messageId = messageId
-    self.emoji = self.emoji
+    self.emojiSelected = emojiSelected
   }
 }

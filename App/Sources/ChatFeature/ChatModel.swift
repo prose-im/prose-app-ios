@@ -14,7 +14,10 @@ import SwiftUI
 public final class ChatModel {
   @CasePathable
   enum Route {
+    case messageMenu(MessageMenuModel)
     case emojiPicker(ReactionsModel)
+    case deleteMessageConfirmation(MessageId)
+    case editMessage(EditMessageModel)
   }
 
   @ObservationIgnored @SharedReader var account: Account
@@ -22,17 +25,9 @@ public final class ChatModel {
   @ObservationIgnored @Dependency(\.client) var client
   @ObservationIgnored @Dependency(\.room) var room
   @ObservationIgnored @Dependency(\.logger[category: "Chat"]) var logger
+  @ObservationIgnored @Dependency(\.pasteboard) var pasteboard
 
-  var route: Route? {
-    didSet {
-      if
-        let model = self.route?[case: \.emojiPicker],
-        let emoji = model.emoji?.emoji
-      {
-        self.toggleReaction(for: model.messageId, reaction: emoji)
-      }
-    }
-  }
+  var route: Route?
 
   let messageInputModel: MessageInputModel
 
@@ -64,8 +59,54 @@ public final class ChatModel {
     }
   }
 
+  func showMessageMenu(for messageId: MessageId) {
+    guard let message = self.messages[id: messageId] else {
+      self.logger.error("Could not present menu for \(messageId). Message is missing.")
+      return
+    }
+
+    self.route = .messageMenu(.init(messageId: messageId) { action in
+      self.route = nil
+
+      switch action {
+      case let .addEmoji(emoji):
+        self.toggleReaction(for: messageId, reaction: emoji)
+
+      case .showEmojis:
+        self.showEmojiPicker(for: messageId)
+
+      case .editMessage:
+        let model = EditMessageModel(
+          messageId: messageId,
+          body: message.content,
+          attachments: message.attachments,
+        ) { action in
+          self.route = nil
+
+          switch action {
+          case let .updateMessage(text, attachments):
+            self.updateMessage(id: messageId, body: text, attachments: attachments)
+
+          case .cancel:
+            break
+          }
+        }
+
+        self.route = .editMessage(model)
+
+      case .copyMessage:
+        self.pasteboard.copyString(message.content)
+
+      case .deleteMessage:
+        self.route = .deleteMessageConfirmation(messageId)
+      }
+    })
+  }
+
   func showEmojiPicker(for messageId: MessageId) {
-    self.route = .emojiPicker(.init(messageId: messageId))
+    self.route = .emojiPicker(.init(messageId: messageId) { emoji in
+      self.toggleReaction(for: messageId, reaction: emoji)
+    })
   }
 
   func toggleReaction(for messageId: MessageId, reaction emoji: Emoji) {
@@ -74,6 +115,35 @@ public final class ChatModel {
         try await self.room.baseRoom.toggleReactionToMessage(messageId: messageId, emoji: emoji)
       } catch {
         self.logger.error("Failed to toggle emoji. \(error.localizedDescription)")
+      }
+    }
+  }
+
+  func messageDeletionConfirmed(messageId: MessageId) {
+    self.route = nil
+
+    Task { [room = self.room, logger = self.logger] in
+      do {
+        try await room.baseRoom.retractMessage(messageId: messageId)
+      } catch {
+        logger.error("Failed to retract message. \(error.localizedDescription)")
+      }
+    }
+  }
+
+  func messageDeletionCancelled() {
+    self.route = nil
+  }
+
+  func updateMessage(id: MessageId, body: String, attachments: [Attachment]) {
+    Task {
+      do {
+        try await self.room.baseRoom.updateMessage(
+          messageId: id,
+          request: .init(body: .init(text: body), attachments: attachments),
+        )
+      } catch {
+        self.logger.error("Failed to update message. \(error.localizedDescription)")
       }
     }
   }

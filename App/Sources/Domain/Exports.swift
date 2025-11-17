@@ -8,6 +8,7 @@
 @_exported import struct ProseSDK.AccountBookmark
 @_exported import class ProseSDK.AccountBookmarksClient
 @_exported import struct ProseSDK.AccountInfo
+@_exported import struct ProseSDK.Attachment
 @_exported import enum ProseSDK.Availability
 @_exported import class ProseSDK.Avatar
 @_exported import struct ProseSDK.AvatarBundle

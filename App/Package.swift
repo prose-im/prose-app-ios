@@ -74,7 +74,10 @@ let package = Package(
       dependencies: [
         .product(name: "ElegantEmojiPicker", package: "Elegant-Emoji-Picker"),
       ],
-      resources: [.copy("Messages/HTML")],
+      resources: [
+        .copy("Messages/HTML"),
+        .process("Assets.xcassets"),
+      ],
     ),
     .feature(
       name: "RoomPickerFeature",

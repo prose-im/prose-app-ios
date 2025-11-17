@@ -12,6 +12,8 @@ import WebKit
 struct MessagesView: UIViewRepresentable {
   struct Callbacks {
     var showReactions: ((MessageId, EventOrigin) -> Void)?
+    var showMessageMenu: ((MessageId) -> Void)?
+    var toggleEmoji: ((MessageId, Emoji) -> Void)?
   }
 
   var callbacks = Callbacks()
@@ -54,28 +56,38 @@ struct MessagesView: UIViewRepresentable {
       context.coordinator.model.webViewIsReady = true
     }
 
-//    // Allow right clicking messages
-//    contentController.addMessageEventHandler(for: .showMenu) { result in
-//      actions.send(.messageEvent(MessageEvent.showMenu, from: result))
-//    }
-
-    // Allow toggling reactions
-    contentController
-      .addMessageEventHandler(for: .toggleReaction) { [model = context.coordinator.model] (
-        result: Result<
-          ToggleReactionHandlerPayload,
-          JSEventError,
-        >,
-      ) in
+    // Allow right clicking messages
+    if let showMessageMenu = self.callbacks.showMessageMenu {
+      contentController.addMessageEventHandler(for: .showMenu) { (result: Result<
+        MessageMenuHandlerPayload,
+        JSEventError,
+      >) in
         guard
           case let .success(payload) = result,
           let messageId = payload.id
         else {
           return
         }
-
-        model.toggleReaction(for: messageId, reaction: payload.reaction)
+        showMessageMenu(messageId)
       }
+    }
+
+    // Allow toggling reactions
+    if let toggleEmoji = self.callbacks.toggleEmoji {
+      contentController
+        .addMessageEventHandler(for: .toggleReaction) { (result: Result<
+          ToggleReactionHandlerPayload,
+          JSEventError,
+        >) in
+          guard
+            case let .success(payload) = result,
+            let messageId = payload.id
+          else {
+            return
+          }
+          toggleEmoji(messageId, payload.reaction)
+        }
+    }
 
     // Enable reactions picker shortcut
     if let showReactions = self.callbacks.showReactions {
@@ -157,6 +169,18 @@ extension MessagesView {
   func onShowReactions(_ handler: @escaping (MessageId, EventOrigin) -> Void) -> Self {
     var view = self
     view.callbacks.showReactions = handler
+    return view
+  }
+
+  func onShowMessageMenu(_ handler: @escaping (MessageId) -> Void) -> Self {
+    var view = self
+    view.callbacks.showMessageMenu = handler
+    return view
+  }
+
+  func onToggleEmoji(_ handler: @escaping (MessageId, Emoji) -> Void) -> Self {
+    var view = self
+    view.callbacks.toggleEmoji = handler
     return view
   }
 }
