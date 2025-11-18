@@ -9,11 +9,9 @@ import MainFeature
 import SwiftUI
 
 public struct AppView: View {
-  @Bindable var model: AppModel
+  @State var model = AppModel()
 
-  public init() {
-    self.model = AppModel()
-  }
+  public init() {}
 
   public var body: some View {
     self.mainContent

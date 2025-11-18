@@ -10,7 +10,7 @@ import SharedUI
 import SwiftUI
 
 public struct RoomView: View {
-  @Bindable var model: RoomModel
+  @State var model: RoomModel
 
   public init(model: RoomModel) {
     self.model = model
@@ -21,15 +21,14 @@ public struct RoomView: View {
       ChatView(model: self.model.chatModel)
         .navigationBarTitle(Text(self.model.name))
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-          await self.model.task()
-        }
 
       if self.model.account.connectionStatus != .connected {
         OfflineBanner(isConnecting: self.model.account.connectionStatus == .connecting) {
           self.model.reconnect()
         }.padding(.horizontal)
       }
+    }.task {
+      await self.model.task()
     }
   }
 }
