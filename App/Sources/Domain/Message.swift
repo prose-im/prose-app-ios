@@ -6,7 +6,7 @@
 import Foundation
 import ProseSDK
 
-public struct Message: Encodable, Identifiable, Equatable, Sendable {
+public struct Message: Identifiable, Equatable, Sendable {
   public struct Metas: Encodable, Equatable, Sendable {
     public let encrypted: Bool
     public let edited: Bool
@@ -32,6 +32,7 @@ public struct Message: Encodable, Identifiable, Equatable, Sendable {
   public let formatted: Formatted
   public let metas: Metas
   public let reactions: [Reaction]
+  public let attachments: [Attachment]
 }
 
 public extension Message {
@@ -44,6 +45,84 @@ public extension Message {
     self.metas = .init(encrypted: false, edited: false, transient: false, lastRead: false)
     self.reactions = sdkMessage.reactions.map {
       .init(reaction: $0.emoji, authors: $0.from.map(\.id.description))
+    }
+    self.attachments = sdkMessage.attachments
+  }
+}
+
+extension Message: Encodable {
+  enum CodingKeys: String, CodingKey {
+    case id
+    case type
+    case date
+    case from
+    case content
+    case formatted
+    case metas
+    case reactions
+    case files
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(self.id, forKey: .id)
+    try container.encode(self.type, forKey: .type)
+    try container.encode(self.date, forKey: .date)
+    try container.encode(self.from, forKey: .from)
+    try container.encode(self.content, forKey: .content)
+    try container.encode(self.formatted, forKey: .formatted)
+    try container.encode(self.metas, forKey: .metas)
+    try container.encode(self.reactions, forKey: .reactions)
+    try container.encode(self.attachments.map(JSAttachment.init(sdkAttachment:)), forKey: .files)
+  }
+}
+
+private struct JSAttachment: Encodable, Equatable, Sendable {
+  struct Preview: Encodable, Equatable, Sendable {
+    struct Size: Encodable, Equatable, Sendable {
+      var width: UInt32
+      var height: UInt32
+    }
+
+    var url: URL?
+    var size: Size?
+    var duration: UInt64?
+  }
+
+  var name: String
+  var type: String
+  var url: URL
+  var preview: Preview?
+
+  init(sdkAttachment: ProseSDK.Attachment) {
+    self.name = sdkAttachment.fileName
+    self.type = sdkAttachment.mediaType
+    self.url = sdkAttachment.url
+    self.preview = .init(sdkPreview: sdkAttachment.type)
+  }
+}
+
+extension JSAttachment.Preview {
+  init?(sdkPreview: ProseSDK.AttachmentType) {
+    switch sdkPreview {
+    case .file:
+      return nil
+
+    case let .audio(duration: duration):
+      self.duration = duration
+
+    case let .image(thumbnail):
+      self.url = thumbnail?.url
+      if let width = thumbnail?.width, let height = thumbnail?.height {
+        self.size = .init(width: width, height: height)
+      }
+
+    case let .video(duration, thumbnail):
+      self.url = thumbnail?.url
+      if let width = thumbnail?.width, let height = thumbnail?.height {
+        self.size = .init(width: width, height: height)
+      }
+      self.duration = duration
     }
   }
 }
