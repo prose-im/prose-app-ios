@@ -18,6 +18,8 @@ public final class ChatModel {
     case emojiPicker(ReactionsModel)
     case deleteMessageConfirmation(MessageId)
     case editMessage(EditMessageModel)
+    case safariView(URL)
+    case filePreview(FilePreviewModel)
   }
 
   @ObservationIgnored @SharedReader var account: Account
@@ -30,6 +32,7 @@ public final class ChatModel {
   var route: Route?
 
   let messageInputModel: MessageInputModel
+  let fileUploadModel: FileUploadModel
 
   var error: UIError?
   var messages = IdentifiedArrayOf<Message>()
@@ -38,6 +41,7 @@ public final class ChatModel {
   public init(account: SharedReader<Account>) {
     self._account = account
     self.messageInputModel = MessageInputModel(account: account)
+    self.fileUploadModel = FileUploadModel()
   }
 
   func task() async {
@@ -146,6 +150,29 @@ public final class ChatModel {
         self.logger.error("Failed to update message. \(error.localizedDescription)")
       }
     }
+  }
+
+  func openURL(url: URL) {
+    self.route = .safariView(url)
+  }
+
+  func previewFile(messageId: MessageId, url: URL) {
+    let mimeType = self.messages[id: messageId]?
+      .attachments
+      .first { $0.url == url }
+      .map(\.mediaType)
+
+    let model = withDependencies(from: self) {
+      FilePreviewModel(
+        url: url,
+        mimeType: mimeType,
+        roomId: self.room.id,
+      ) {
+        self.route = nil
+      }
+    }
+
+    self.route = .filePreview(model)
   }
 }
 

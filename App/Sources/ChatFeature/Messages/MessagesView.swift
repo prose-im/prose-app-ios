@@ -9,11 +9,21 @@ import SwiftUI
 import Toolbox
 import WebKit
 
+typealias ShowReactionsHandler = (MessageId, EventOrigin) -> Void
+typealias ShowMessageMenuHandler = (MessageId) -> Void
+typealias ToggleEmojiHandler = (MessageId, Emoji) -> Void
+typealias OpenLinkHandler = (MessageId, URL) -> Void
+typealias DownloadFileHandler = (MessageId, URL) -> Void
+typealias ViewFileHandler = (MessageId, URL) -> Void
+
 struct MessagesView: UIViewRepresentable {
   struct Callbacks {
-    var showReactions: ((MessageId, EventOrigin) -> Void)?
-    var showMessageMenu: ((MessageId) -> Void)?
-    var toggleEmoji: ((MessageId, Emoji) -> Void)?
+    var showReactions: ShowReactionsHandler?
+    var showMessageMenu: ShowMessageMenuHandler?
+    var toggleEmoji: ToggleEmojiHandler?
+    var openLink: OpenLinkHandler?
+    var downloadFile: DownloadFileHandler?
+    var viewFile: ViewFileHandler?
   }
 
   var callbacks = Callbacks()
@@ -57,57 +67,63 @@ struct MessagesView: UIViewRepresentable {
     }
 
     // Allow right clicking messages
-    if let showMessageMenu = self.callbacks.showMessageMenu {
-      contentController.addMessageEventHandler(for: .showMenu) { (result: Result<
-        MessageMenuHandlerPayload,
-        JSEventError,
-      >) in
-        guard
-          case let .success(payload) = result,
-          let messageId = payload.id
-        else {
-          return
-        }
-        showMessageMenu(messageId)
+    contentController.addMessageEventHandler(for: .showMenu) { [callbacks] (result: Result<
+      MessageMenuHandlerPayload,
+      JSEventError,
+    >) in
+      guard case let .success(payload) = result else {
+        return
       }
+      callbacks.showMessageMenu?(payload.id)
     }
 
     // Allow toggling reactions
-    if let toggleEmoji = self.callbacks.toggleEmoji {
-      contentController
-        .addMessageEventHandler(for: .toggleReaction) { (result: Result<
-          ToggleReactionHandlerPayload,
-          JSEventError,
-        >) in
-          guard
-            case let .success(payload) = result,
-            let messageId = payload.id
-          else {
-            return
-          }
-          toggleEmoji(messageId, payload.reaction)
-        }
-    }
-
-    // Enable reactions picker shortcut
-    if let showReactions = self.callbacks.showReactions {
-      contentController.addMessageEventHandler(for: .showReactions) { (result: Result<
-        ShowReactionsHandlerPayload,
+    contentController
+      .addMessageEventHandler(for: .toggleReaction) { [callbacks] (result: Result<
+        ToggleReactionHandlerPayload,
         JSEventError,
       >) in
-        guard
-          case let .success(payload) = result,
-          let messageId = payload.id
-        else {
+        guard case let .success(payload) = result else {
           return
         }
-        showReactions(messageId, payload.origin)
+        callbacks.toggleEmoji?(payload.id, payload.reaction)
+      }
+
+    contentController.addMessageEventHandler(for: .showReactions) { [callbacks] (result: Result<
+      ShowReactionsHandlerPayload,
+      JSEventError,
+    >) in
+      guard case let .success(payload) = result else {
+        return
+      }
+      callbacks.showReactions?(payload.id, payload.origin)
+    }
+
+    contentController.addMessageEventHandler(for: .openLink) { [callbacks] (result: Result<
+      OpenLinkPayload,
+      JSEventError,
+    >) in
+      guard case let .success(payload) = result else {
+        return
+      }
+      callbacks.openLink?(payload.id, payload.link.url)
+    }
+
+    contentController.addMessageEventHandler(for: .viewFile) { [callbacks] (result: Result<
+      ViewFilePayload,
+      JSEventError,
+    >) in
+      guard case let .success(payload) = result else {
+        return
+      }
+
+      switch payload.action {
+      case .expand:
+        callbacks.viewFile?(payload.id, payload.file.url)
+      case .download:
+        callbacks.downloadFile?(payload.id, payload.file.url)
       }
     }
-//    // Our user either scroll to the beginning or the end of the message list
-//    contentController.addMessageEventHandler(for: .reachedEndOfList) { result in
-//      actions.send(.messageEvent(MessageEvent.reachedEndOfList, from: result))
-//    }
 
     let configuration = WKWebViewConfiguration()
     configuration.userContentController = contentController
@@ -166,21 +182,39 @@ struct MessagesView: UIViewRepresentable {
 }
 
 extension MessagesView {
-  func onShowReactions(_ handler: @escaping (MessageId, EventOrigin) -> Void) -> Self {
+  func onShowReactions(_ handler: @escaping ShowReactionsHandler) -> Self {
     var view = self
     view.callbacks.showReactions = handler
     return view
   }
 
-  func onShowMessageMenu(_ handler: @escaping (MessageId) -> Void) -> Self {
+  func onShowMessageMenu(_ handler: @escaping ShowMessageMenuHandler) -> Self {
     var view = self
     view.callbacks.showMessageMenu = handler
     return view
   }
 
-  func onToggleEmoji(_ handler: @escaping (MessageId, Emoji) -> Void) -> Self {
+  func onToggleEmoji(_ handler: @escaping ToggleEmojiHandler) -> Self {
     var view = self
     view.callbacks.toggleEmoji = handler
+    return view
+  }
+
+  func onOpenLink(_ handler: @escaping OpenLinkHandler) -> Self {
+    var view = self
+    view.callbacks.openLink = handler
+    return view
+  }
+
+  func onDownloadFile(_ handler: @escaping DownloadFileHandler) -> Self {
+    var view = self
+    view.callbacks.downloadFile = handler
+    return view
+  }
+
+  func onViewFile(_ handler: @escaping ViewFileHandler) -> Self {
+    var view = self
+    view.callbacks.viewFile = handler
     return view
   }
 }

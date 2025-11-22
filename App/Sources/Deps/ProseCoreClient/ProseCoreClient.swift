@@ -71,7 +71,7 @@ public struct ProseCoreClient: Sendable {
 
   public var requestUploadSlot: @Sendable (
     _ fileName: String,
-    _ fileSize: Int64,
+    _ fileSize: UInt64,
     _ mediaType: Mime,
   ) async throws -> UploadSlot
 

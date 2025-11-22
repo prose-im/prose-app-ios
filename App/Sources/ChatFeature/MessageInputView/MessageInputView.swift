@@ -3,13 +3,32 @@
 // Copyright (c) 2025 Prose Foundation
 //
 
+import PhotosUI
 import SwiftUI
 
-struct MessageInputView: View {
+struct MessageInputView<T: View>: View {
   @Bindable var model: MessageInputModel
+
+  let attachmentMenu: T
+
+  init(model: MessageInputModel, @ViewBuilder attachmentMenu: () -> T) {
+    self.model = model
+    self.attachmentMenu = attachmentMenu()
+  }
 
   var body: some View {
     HStack(spacing: 12) {
+      Menu {
+        self.attachmentMenu
+      } label: {
+        Button(action: {}) {
+          Image(systemName: "paperclip")
+            .padding(6)
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.circle)
+      }
+
       TextField("Send a message", text: self.$model.messageText, axis: .vertical)
         .textFieldStyle(.plain)
         .padding()

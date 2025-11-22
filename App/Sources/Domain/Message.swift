@@ -40,7 +40,8 @@ public extension Message {
     self.id = sdkMessage.id
     self.date = ISO8601DateFormatter().string(from: sdkMessage.timestamp)
     self.from = sdkMessage.from.id.description
-    self.content = sdkMessage.body.raw
+    // The prose-core-views chokes on an empty message body so we'll use a placeholder
+    self.content = sdkMessage.body.raw.isEmpty ? "<empty>" : sdkMessage.body.raw
     self.formatted = Formatted(content: sdkMessage.body.html)
     self.metas = .init(encrypted: false, edited: false, transient: false, lastRead: false)
     self.reactions = sdkMessage.reactions.map {

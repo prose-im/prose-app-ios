@@ -212,7 +212,7 @@ extension ProseCoreClient {
       requestUploadSlot: { fileName, fileSize, mediaType in
         try await client.requestUploadSlot(
           fileName: fileName,
-          fileSize: UInt64(fileSize),
+          fileSize: fileSize,
           mediaType: mediaType,
         )
       },
