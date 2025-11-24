@@ -1,0 +1,9 @@
+- feat: Support adding/removing reactions
+- feat: Display attachments in message list
+- feat: Add message menu (reactions, copy/edit/delete)
+- feat: Support uploads, attachment previews and opening URLs
+
+Known problems:
+- Displaying the message menu and smiley picker currently requires a long tap on a message to bring up the respective buttons
+- Previewing an attachment requires two taps on the attachments
+- Switching away from the app and back while a room was selected shows a "Room is gone" error
