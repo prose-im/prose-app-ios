@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#MISE description="Download and extract release from the prose-core-views repo"
+#USAGE flag "--tag <tag>" help="The specific release tag (e.g. '0.55.1') to download." default="latest"
+
+set -euo pipefail
+
+REPO="prose-im/prose-core-views"
+TARGET_DIR="./App/Sources/MessageListFeature/HTML"
+TAG="${usage_tag}"
+
+if [ "$TAG" = "latest" ]; then
+  echo "Tag is set to 'latest'. Determining latest release for $REPO..."
+  
+  LATEST_RELEASE_JSON=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+  NEW_TAG=$(echo "$LATEST_RELEASE_JSON" | jq -r '.tag_name')
+  
+  if [ "$NEW_TAG" = "null" ] || [ -z "$NEW_TAG" ]; then
+    echo "Error: Could not determine the latest tag."
+    exit 1
+  fi
+  TAG="$NEW_TAG"
+  echo "Using latest tag: $TAG"
+else
+  echo "Using specified tag: $TAG"
+fi
+
+DOWNLOAD_URL="https://github.com/$REPO/releases/download/$TAG/release-$TAG.tar.gz"
+FILENAME="release-$TAG.tar.gz"
+
+rm -rf "$TARGET_DIR"
+mkdir "$TARGET_DIR"
+touch "$TARGET_DIR/.gitkeep"
+
+echo "Downloading ${DOWNLOAD_URL}…"
+curl -Ls "$DOWNLOAD_URL" | tar -xvz -C "$TARGET_DIR" --strip=1
+
+echo "Updated prose-core-views to $TAG."
