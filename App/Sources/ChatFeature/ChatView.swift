@@ -4,6 +4,7 @@
 //
 
 import ElegantEmojiPicker
+import MessageListFeature
 import QuickLook
 import SharedUI
 import SwiftUI
@@ -69,7 +70,7 @@ public struct ChatView: View {
     } else {
       VStack {
         ZStack(alignment: .bottom) {
-          MessagesView(model: self.model)
+          MessageListView(model: self.model.messageListModel)
             .onShowReactions { messageId, _ in
               self.model.showEmojiPicker(for: messageId)
             }

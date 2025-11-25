@@ -72,11 +72,17 @@ let package = Package(
     .feature(
       name: "ChatFeature",
       dependencies: [
+        "MessageListFeature",
         .product(name: "ElegantEmojiPicker", package: "Elegant-Emoji-Picker"),
       ],
       resources: [
-        .copy("Messages/HTML"),
         .process("Assets.xcassets"),
+      ],
+    ),
+    .feature(
+      name: "MessageListFeature",
+      resources: [
+        .copy("HTML"),
       ],
     ),
     .feature(

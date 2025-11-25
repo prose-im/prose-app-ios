@@ -9,14 +9,14 @@ import SwiftUI
 import Toolbox
 import WebKit
 
-typealias ShowReactionsHandler = (MessageId, EventOrigin) -> Void
-typealias ShowMessageMenuHandler = (MessageId) -> Void
-typealias ToggleEmojiHandler = (MessageId, Emoji) -> Void
-typealias OpenLinkHandler = (MessageId, URL) -> Void
-typealias DownloadFileHandler = (MessageId, URL) -> Void
-typealias ViewFileHandler = (MessageId, URL) -> Void
+public typealias ShowReactionsHandler = (MessageId, EventOrigin) -> Void
+public typealias ShowMessageMenuHandler = (MessageId) -> Void
+public typealias ToggleEmojiHandler = (MessageId, Emoji) -> Void
+public typealias OpenLinkHandler = (MessageId, URL) -> Void
+public typealias DownloadFileHandler = (MessageId, URL) -> Void
+public typealias ViewFileHandler = (MessageId, URL) -> Void
 
-struct MessagesView: UIViewRepresentable {
+public struct MessageListView: UIViewRepresentable {
   struct Callbacks {
     var showReactions: ShowReactionsHandler?
     var showMessageMenu: ShowMessageMenuHandler?
@@ -29,30 +29,30 @@ struct MessagesView: UIViewRepresentable {
   var callbacks = Callbacks()
 
   @MainActor
-  final class Coordinator: NSObject {
+  public final class Coordinator: NSObject {
     /// This is the state of messages stored in the web view. It's used for diffing purposes.
-    let model: ChatModel
+    let model: MessageListModel
     var lastMessages = IdentifiedArrayOf<Message>()
     var ffi: FFI!
 
-    init(model: ChatModel) {
+    init(model: MessageListModel) {
       self.model = model
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
 
-  let model: ChatModel
+  let model: MessageListModel
 
-  init(model: ChatModel) {
+  public init(model: MessageListModel) {
     self.model = model
   }
 
-  func makeCoordinator() -> Coordinator {
+  public func makeCoordinator() -> Coordinator {
     Coordinator(model: self.model)
   }
 
-  func makeUIView(context: Context) -> WKWebView {
+  public func makeUIView(context: Context) -> WKWebView {
     let logger = context.coordinator.model.logger
     let contentController = WKUserContentController()
 
@@ -130,7 +130,7 @@ struct MessagesView: UIViewRepresentable {
     configuration.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
 
     let htmlURL = Bundle.module.url(forResource: "HTML/messaging", withExtension: "html")
-      .expect("Failed to read MessagesView template.")
+      .expect("Failed to read MessageListView template.")
 
     let webView = WKWebView(frame: .zero, configuration: configuration)
     webView.isOpaque = false
@@ -160,7 +160,7 @@ struct MessagesView: UIViewRepresentable {
     return webView
   }
 
-  func updateUIView(_ webView: WKWebView, context: Context) {
+  public func updateUIView(_ webView: WKWebView, context: Context) {
     guard context.coordinator.model.webViewIsReady else {
       return
     }
@@ -181,7 +181,7 @@ struct MessagesView: UIViewRepresentable {
   }
 }
 
-extension MessagesView {
+public extension MessageListView {
   func onShowReactions(_ handler: @escaping ShowReactionsHandler) -> Self {
     var view = self
     view.callbacks.showReactions = handler
@@ -219,7 +219,7 @@ extension MessagesView {
   }
 }
 
-private extension MessagesView {
+private extension MessageListView {
   func updateMessages(_: WKWebView, coordinator: Coordinator) {
     guard coordinator.model.webViewIsReady else {
       return

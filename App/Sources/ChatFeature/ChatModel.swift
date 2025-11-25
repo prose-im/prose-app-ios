@@ -7,6 +7,7 @@ import CasePaths
 import Deps
 import Domain
 import Foundation
+import MessageListFeature
 import SharedUI
 import SwiftUI
 
@@ -23,6 +24,7 @@ public final class ChatModel {
   }
 
   @ObservationIgnored @SharedReader var account: Account
+  @ObservationIgnored @Shared var messages: IdentifiedArrayOf<Message>
 
   @ObservationIgnored @Dependency(\.client) var client
   @ObservationIgnored @Dependency(\.room) var room
@@ -31,15 +33,19 @@ public final class ChatModel {
 
   var route: Route?
 
+  let messageListModel: MessageListModel
   let messageInputModel: MessageInputModel
   let fileUploadModel: FileUploadModel
 
   var error: UIError?
-  var messages = IdentifiedArrayOf<Message>()
-  var webViewIsReady = false
 
   public init(account: SharedReader<Account>) {
+    let messages = Shared(value: IdentifiedArrayOf<Message>())
+
     self._account = account
+    self._messages = messages
+
+    self.messageListModel = MessageListModel(messages: SharedReader(messages))
     self.messageInputModel = MessageInputModel(account: account)
     self.fileUploadModel = FileUploadModel()
   }
@@ -184,9 +190,11 @@ private extension ChatModel {
       let result = try await self.room.baseRoom.loadLatestMessages()
       self.logger.info("Loaded \(result.messages.count) messages.")
 
-      self.messages = .init(uniqueElements: result.messages.map {
-        Message(sdkMessage: $0)
-      })
+      self.$messages.withLock {
+        $0 = .init(uniqueElements: result.messages.map {
+          Message(sdkMessage: $0)
+        })
+      }
     } catch {
       self.error = UIError(title: "Failed to load messages", error: error)
     }
@@ -197,14 +205,18 @@ private extension ChatModel {
 
     switch event {
     case let .messagesAppended(messageIds), let .messagesUpdated(messageIds):
-      let messages = try await room.loadMessagesWithIds(ids: messageIds)
-      for message in messages {
-        self.messages.updateOrAppend(Message(sdkMessage: message))
+      let newOrUpdatedMessages = try await room.loadMessagesWithIds(ids: messageIds)
+      self.$messages.withLock { messages in
+        for message in newOrUpdatedMessages {
+          messages.updateOrAppend(Message(sdkMessage: message))
+        }
       }
 
     case let .messagesDeleted(messageIds):
-      for id in messageIds {
-        self.messages.remove(id: id)
+      self.$messages.withLock { messages in
+        for id in messageIds {
+          messages.remove(id: id)
+        }
       }
 
     case .messagesNeedReload:
