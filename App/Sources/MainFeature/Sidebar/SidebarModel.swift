@@ -63,6 +63,8 @@ final class SidebarModel {
       switch event {
       case .sidebarChanged:
         await self.sidebarItemsDidChange(items: self.client.sidebarItems())
+      case .connectionStatusChanged(event: .connect):
+        self.didReconnect()
       default:
         continue
       }
@@ -73,17 +75,12 @@ final class SidebarModel {
     self.needsRefresh = true
   }
 
-  func roomModel(for roomId: RoomId) -> RoomModel? {
-    guard let room = try? self.client.getConnectedRoom(roomId: roomId) else {
-      return nil
-    }
+  func navigateToRoom(roomId: RoomId) {
+    // self.route = .invalidRoom
 
-    return withDependencies {
-      $0.client = self.client
-      $0.room = .live(id: room.id, room: room)
-    } operation: {
-      RoomModel(account: self.$sessionState.selectedAccount)
-    }
+    let room = try? self.client.getConnectedRoom(roomId: roomId)
+    let model = self.roomModel(with: .live(id: roomId, room: room))
+    self.route = .room(model)
   }
 
   func removeItem(_ item: SidebarItem) {
@@ -181,16 +178,30 @@ final class SidebarModel {
 }
 
 private extension SidebarModel {
+  func roomModel(with roomClient: RoomClient) -> RoomModel {
+    withDependencies {
+      $0.client = self.client
+      $0.room = roomClient
+    } operation: {
+      RoomModel(account: self.$sessionState.selectedAccount)
+    }
+  }
+
   func sidebarItemsDidChange(items: [SidebarItem]) {
     self.isLoading = false
     self.sections = Section.sectionsByGrouping(items: items, settings: self.$settings)
   }
 
-  func navigateToRoom(roomId: RoomId) {
-    guard let model = self.roomModel(for: roomId) else {
+  func didReconnect() {
+    guard case let .room(roomModel) = self.route else {
+      return
+    }
+
+    guard let room = try? self.client.getConnectedRoom(roomId: roomModel.roomId()) else {
       self.route = .invalidRoom
       return
     }
-    self.route = .room(model)
+
+    self.route = .room(self.roomModel(with: .live(id: room.id, room: room)))
   }
 }

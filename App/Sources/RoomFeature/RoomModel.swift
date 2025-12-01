@@ -28,6 +28,10 @@ public final class RoomModel {
     self.name = self.room.name()
   }
 
+  public func roomId() -> RoomId {
+    self.room.id()
+  }
+
   func task() async {
     await self.markAsRead()
 

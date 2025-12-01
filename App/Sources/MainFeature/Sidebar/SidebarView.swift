@@ -49,13 +49,6 @@ struct SidebarView: View {
     .navigationDestination(item: self.$model.route.invalidRoom) {
       ContentUnavailableView("Room is gone", systemImage: "binoculars")
     }
-    .navigationDestination(for: RoomId.self) { id in
-      if let model = self.model.roomModel(for: id) {
-        RoomView(model: model)
-      } else {
-        ContentUnavailableView("Room is gone", systemImage: "binoculars")
-      }
-    }
   }
 }
 
@@ -64,8 +57,15 @@ private extension SidebarView {
   func section(with section: SidebarModel.Section) -> some View {
     Section(isExpanded: Binding(section.$isExpanded)) {
       ForEach(section.items) { item in
-        NavigationLink(value: item.roomId) {
-          self.row(with: item)
+        Button {
+          self.model.navigateToRoom(roomId: item.roomId)
+        } label: {
+          HStack {
+            self.row(with: item)
+            Spacer()
+            Image(systemName: "chevron.right")
+              .foregroundColor(Color(.tertiaryLabel))
+          }
         }
       }
     } header: {
