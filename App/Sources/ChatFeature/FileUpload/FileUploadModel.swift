@@ -252,7 +252,7 @@ private extension FileUploadModel {
         }
       }
 
-      try await self.room.baseRoom.sendMessage(request: .init(
+      try await self.room.sendMessage(request: .init(
         body: .init(text: "Shared \(attachments.count) file(s)"),
         attachments: attachments,
       ))

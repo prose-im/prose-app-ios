@@ -25,7 +25,7 @@ public final class RoomModel {
   public init(account: SharedReader<Account>) {
     self._account = account
     self.chatModel = ChatModel(account: account)
-    self.name = self.room.baseRoom.name()
+    self.name = self.room.name()
   }
 
   func task() async {
@@ -34,7 +34,7 @@ public final class RoomModel {
     for await event in self.client.events() {
       guard
         case let .roomChanged(room, type) = event,
-        room.id == self.room.id
+        room.id == self.room.id()
       else {
         continue
       }
@@ -60,7 +60,7 @@ public final class RoomModel {
 private extension RoomModel {
   func markAsRead() async {
     do {
-      try await self.room.baseRoom.markAsRead()
+      try await self.room.markAsRead()
     } catch {
       self.logger.error("Failed to mark room as read. \(error.localizedDescription)")
     }

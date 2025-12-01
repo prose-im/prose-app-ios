@@ -34,7 +34,7 @@ final class MessageInputModel {
   }
 
   func task() async {
-    if let draft = try? await self.room.baseRoom.loadDraft() {
+    if let draft = try? await self.room.loadDraft() {
       self.messageText = draft
     }
   }
@@ -42,7 +42,7 @@ final class MessageInputModel {
   func sendMessage() {
     Task { [messageText = self.messageText] in
       do {
-        try await self.room.baseRoom.sendMessage(request: .init(
+        try await self.room.sendMessage(request: .init(
           body: .init(text: messageText),
           attachments: [],
         ))
@@ -62,7 +62,7 @@ private extension MessageInputModel {
       do {
         try await Task.sleep(for: .milliseconds(500))
         self.logger.info("Saving draft \(message)…")
-        try await self.room.baseRoom.saveDraft(message: message)
+        try await self.room.saveDraft(message: message)
       } catch {
         if !(error is CancellationError) {
           self.logger.error("Failed to save draft. \(error.localizedDescription)")

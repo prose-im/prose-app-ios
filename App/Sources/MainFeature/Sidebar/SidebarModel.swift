@@ -80,7 +80,7 @@ final class SidebarModel {
 
     return withDependencies {
       $0.client = self.client
-      $0.room = room
+      $0.room = .live(id: room.id, room: room)
     } operation: {
       RoomModel(account: self.$sessionState.selectedAccount)
     }

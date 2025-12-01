@@ -56,7 +56,7 @@ public final class ChatModel {
     for await event in self.client.events() {
       guard
         case let .roomChanged(room: room, type: roomEvent) = event,
-        room.id == self.room.id
+        room.id == self.room.id()
       else {
         continue
       }
@@ -122,7 +122,7 @@ public final class ChatModel {
   func toggleReaction(for messageId: MessageId, reaction emoji: Emoji) {
     Task {
       do {
-        try await self.room.baseRoom.toggleReactionToMessage(messageId: messageId, emoji: emoji)
+        try await self.room.toggleReactionToMessage(messageId: messageId, emoji: emoji)
       } catch {
         self.logger.error("Failed to toggle emoji. \(error.localizedDescription)")
       }
@@ -134,7 +134,7 @@ public final class ChatModel {
 
     Task { [room = self.room, logger = self.logger] in
       do {
-        try await room.baseRoom.retractMessage(messageId: messageId)
+        try await room.retractMessage(messageId: messageId)
       } catch {
         logger.error("Failed to retract message. \(error.localizedDescription)")
       }
@@ -148,7 +148,7 @@ public final class ChatModel {
   func updateMessage(id: MessageId, body: String, attachments: [Attachment]) {
     Task {
       do {
-        try await self.room.baseRoom.updateMessage(
+        try await self.room.updateMessage(
           messageId: id,
           request: .init(body: .init(text: body), attachments: attachments),
         )
@@ -172,7 +172,7 @@ public final class ChatModel {
       FilePreviewModel(
         url: url,
         mimeType: mimeType,
-        roomId: self.room.id,
+        roomId: self.room.id(),
       ) {
         self.route = nil
       }
@@ -187,7 +187,7 @@ private extension ChatModel {
     do {
       self.error = nil
 
-      let result = try await self.room.baseRoom.loadLatestMessages()
+      let result = try await self.room.loadLatestMessages()
       self.logger.info("Loaded \(result.messages.count) messages.")
 
       self.$messages.withLock {
@@ -201,14 +201,14 @@ private extension ChatModel {
   }
 
   func handleRoomEvent(_ event: ClientRoomEventType) async throws {
-    let room = self.room.baseRoom
+    let room = self.room
 
     switch event {
     case let .messagesAppended(messageIds), let .messagesUpdated(messageIds):
       let newOrUpdatedMessages = try await room.loadMessagesWithIds(ids: messageIds)
       self.$messages.withLock { messages in
         for message in newOrUpdatedMessages {
-          messages.updateOrAppend(Message(sdkMessage: message))
+          messages.updateOrAppend(message)
         }
       }
 
