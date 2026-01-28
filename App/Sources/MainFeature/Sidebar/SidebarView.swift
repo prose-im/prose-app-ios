@@ -20,7 +20,7 @@ struct SidebarView: View {
 
   var body: some View {
     VStack {
-      List {
+      List(selection: self.$model.selectedRoomId) {
         ForEach(self.model.sections) {
           self.section(with: $0)
         }
@@ -43,12 +43,6 @@ struct SidebarView: View {
     .alert(self.$model.route.alert) { action in
       self.model.alertActionTapped(action: action)
     }
-    .navigationDestination(item: self.$model.route.room) { model in
-      RoomView(model: model)
-    }
-    .navigationDestination(item: self.$model.route.invalidRoom) {
-      ContentUnavailableView("Room is gone", systemImage: "binoculars")
-    }
   }
 }
 
@@ -57,16 +51,13 @@ private extension SidebarView {
   func section(with section: SidebarModel.Section) -> some View {
     Section(isExpanded: Binding(section.$isExpanded)) {
       ForEach(section.items) { item in
-        Button {
-          self.model.navigateToRoom(roomId: item.roomId)
-        } label: {
-          HStack {
-            self.row(with: item)
-            Spacer()
-            Image(systemName: "chevron.right")
-              .foregroundColor(Color(.tertiaryLabel))
-          }
+        HStack {
+          self.row(with: item)
+          Spacer()
+          Image(systemName: "chevron.right")
+            .foregroundColor(Color(.tertiaryLabel))
         }
+        .tag(item.roomId)
       }
     } header: {
       HStack {

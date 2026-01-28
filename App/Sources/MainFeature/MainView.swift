@@ -3,6 +3,7 @@
 // Copyright (c) 2025 Prose Foundation
 //
 
+import RoomFeature
 import SwiftUI
 
 public struct MainView: View {
@@ -19,7 +20,16 @@ public struct MainView: View {
         SidebarView(model: self.model.sidebarModel)
       }
     } detail: {
-      Text("No room selected")
+      NavigationStack {
+        switch self.model.sidebarModel.route {
+        case let .room(model):
+          RoomView(model: model)
+        case .invalidRoom:
+          ContentUnavailableView("Room is gone", systemImage: "binoculars")
+        default:
+          Text("No room selected")
+        }
+      }
     }
   }
 }

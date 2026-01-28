@@ -36,6 +36,20 @@ final class SidebarModel {
 
   var route: Route?
 
+  var selectedRoomId: RoomId? {
+    get { self.route[case: \.room]?.roomId() }
+    set {
+      guard let roomId = newValue else {
+        self.route = nil
+        return
+      }
+
+      let room = try? self.client.getConnectedRoom(roomId: roomId)
+      let model = self.roomModel(with: .live(id: roomId, room: room))
+      self.route = .room(model)
+    }
+  }
+
   private(set) var isLoading = true
   private(set) var sections: [Section] = Section.placeholderData
 
@@ -73,14 +87,6 @@ final class SidebarModel {
     // If we're cancelled because our view was dismissed make sure that we reload the data after
     // becoming visible again since it might have changed…
     self.needsRefresh = true
-  }
-
-  func navigateToRoom(roomId: RoomId) {
-    // self.route = .invalidRoom
-
-    let room = try? self.client.getConnectedRoom(roomId: roomId)
-    let model = self.roomModel(with: .live(id: roomId, room: room))
-    self.route = .room(model)
   }
 
   func removeItem(_ item: SidebarItem) {
@@ -178,6 +184,12 @@ final class SidebarModel {
 }
 
 private extension SidebarModel {
+  func navigateToRoom(roomId: RoomId) {
+    let room = try? self.client.getConnectedRoom(roomId: roomId)
+    let model = self.roomModel(with: .live(id: roomId, room: room))
+    self.route = .room(model)
+  }
+
   func roomModel(with roomClient: RoomClient) -> RoomModel {
     withDependencies {
       $0.client = self.client
