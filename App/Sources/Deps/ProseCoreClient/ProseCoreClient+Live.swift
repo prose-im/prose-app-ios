@@ -143,6 +143,9 @@ extension ProseCoreClient {
       loadUserMetadata: { userId in
         try await client.loadUserMetadata(userId: userId)
       },
+      loadUserPresenceInfo: { userId in
+        try await client.loadUserPresenceInfo(userId: userId)
+      },
       addContact: { userId in
         try await client.addContact(userId: userId)
       },

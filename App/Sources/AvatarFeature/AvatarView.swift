@@ -27,13 +27,22 @@ public struct AvatarView: View {
         .resizable()
         .aspectRatio(contentMode: .fill)
     } placeholder: {
-      Color(self.model.bundle.color)
-        .overlay(
-          Text(verbatim: self.model.bundle.initials)
-            .font(.system(size: self.style.resolvedFontSize))
-            .fontWeight(.bold)
-            .foregroundColor(.white),
-        )
+      if let bundle = self.model.bundle {
+        Color(bundle.color)
+          .overlay(
+            Text(verbatim: bundle.initials)
+              .font(.system(size: self.style.resolvedFontSize))
+              .fontWeight(.bold)
+              .foregroundColor(.white),
+          )
+      } else {
+        Color.gray.opacity(0.3)
+          .overlay(
+            Image(systemName: "person.fill")
+              .font(.title2)
+              .foregroundColor(.gray),
+          )
+      }
     }
     .frame(width: self.style.size, height: self.style.size)
     .clipShape(RoundedRectangle(cornerRadius: self.style.resolvedCornerRadius))

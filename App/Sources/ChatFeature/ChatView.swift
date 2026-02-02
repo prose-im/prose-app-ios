@@ -19,6 +19,9 @@ public struct ChatView: View {
 
   public var body: some View {
     self.content
+      .navigationDestination(item: self.$model.route.chatInfo) { model in
+        ChatInfoView(model: model)
+      }
       .sheet(item: self.$model.route.emojiPicker) { model in
         ElegantEmojiPickerRepresentable(
           isPresented: .constant(true),
@@ -110,6 +113,13 @@ public struct ChatView: View {
             Label("Choose File", systemImage: "doc")
           }
         }.fixedSize(horizontal: false, vertical: true)
+      }
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button("Info", systemImage: "info.circle") {
+            self.model.showChatInfo()
+          }
+        }
       }
     }
   }

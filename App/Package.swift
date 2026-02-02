@@ -14,7 +14,7 @@ let package = Package(
     //    .package(path: "../../prose-core-client/master/bindings/prose-sdk-ffi/ProseSDK"),
     .package(
       url: "https://github.com/prose-im/prose-wrapper-swift.git",
-      .upToNextMajor(from: "0.0.17"),
+      .upToNextMajor(from: "0.0.18"),
     ),
     .package(
       url: "https://github.com/pointfreeco/swift-dependencies.git",
@@ -73,6 +73,7 @@ let package = Package(
       name: "ChatFeature",
       dependencies: [
         "MessageListFeature",
+        "RoomPickerFeature",
         .product(name: "ElegantEmojiPicker", package: "Elegant-Emoji-Picker"),
       ],
       resources: [

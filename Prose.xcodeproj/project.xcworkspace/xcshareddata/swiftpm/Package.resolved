@@ -1,5 +1,5 @@
 {
-  "originHash" : "b15be550d24748c2e54d821be27076a82471e0f4db004e265dc0cd1c39d64712",
+  "originHash" : "6caf40644610b6f3f58cfaa81d09143c259f2d355463a875ae46e225e88cd569",
   "pins" : [
     {
       "identity" : "combine-schedulers",
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/prose-im/prose-wrapper-swift.git",
       "state" : {
-        "revision" : "0bb9fb4427243bdc390568eaf7d67d269ae4d341",
-        "version" : "0.17.0"
+        "revision" : "f5d8f4290490c78d2a56c3ca9c9f46400d5a3960",
+        "version" : "0.18.0"
       }
     },
     {

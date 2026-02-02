@@ -17,7 +17,7 @@ extension ParticipantInfo: @retroactive Equatable {
       lhs.isSelf == rhs.isSelf &&
       lhs.availability == rhs.availability &&
       lhs.affiliation == rhs.affiliation &&
-      lhs.avatar?.id() == rhs.avatar?.id() &&
+      lhs.avatarBundle == rhs.avatarBundle &&
       lhs.client == rhs.client &&
       lhs.status == rhs.status
   }

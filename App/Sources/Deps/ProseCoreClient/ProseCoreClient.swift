@@ -36,6 +36,7 @@ public struct ProseCoreClient: Sendable {
   public var saveProfile: @Sendable (_ profile: UserProfile) async throws -> Void
 
   public var loadUserMetadata: @Sendable (_ userId: UserId) async throws -> UserMetadata?
+  public var loadUserPresenceInfo: @Sendable (_ userId: UserId) async throws -> UserPresenceInfo?
 
   public var addContact: @Sendable (_ userId: UserId) async throws -> Void
   public var removeContact: @Sendable (_ userId: UserId) async throws -> Void

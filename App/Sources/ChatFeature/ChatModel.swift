@@ -21,6 +21,7 @@ public final class ChatModel {
     case editMessage(EditMessageModel)
     case safariView(URL)
     case filePreview(FilePreviewModel)
+    case chatInfo(ChatInfoModel)
   }
 
   @ObservationIgnored @SharedReader var account: Account
@@ -179,6 +180,13 @@ public final class ChatModel {
     }
 
     self.route = .filePreview(model)
+  }
+
+  func showChatInfo() {
+    let model = withDependencies(from: self) {
+      ChatInfoModel()
+    }
+    self.route = .chatInfo(model)
   }
 }
 
